@@ -1,0 +1,8 @@
+# Ignore node modules
+backend/node_modules/
+frontend/node_modules/
+# Bare repository for local pushes
+local.git/
+# Logs and environment
+*.log
+.env
