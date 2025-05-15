@@ -232,3 +232,7 @@ body {
 .reactflow-wrapper .react-flow__edge text {
   z-index: 11 !important;
 }
+/* Fix overlapping labels: ensure child nodes render above their parent containers */
+.react-flow__node.period-node { z-index: 1; }
+.react-flow__node.event-node { z-index: 2; }
+.react-flow__node.element-node { z-index: 3; }

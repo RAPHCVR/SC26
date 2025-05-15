@@ -11,21 +11,13 @@ app.use(express.json({ limit: '10mb' })); // Increased limit for potentially lar
 // In-memory data store
 let trajectories = [];
 
-// --- Helper to find nested elements ---
-function findElement(trajectory, periodId, eventId, elementId) {
-    const period = trajectory.periods.find(p => p.id === periodId);
-    if (!period) return null;
-    const event = period.events.find(e => e.id === eventId);
-    if (!event) return null;
-    return event.elements.find(el => el.id === elementId) || null;
-}
 
 
 // --- API Endpoints ---
 
 // GET all trajectories (summary)
 app.get('/api/trajectories', (req, res) => {
-    res.json(trajectories.map(t => ({ id: t.id, subjectName: t.subjectName })));
+    res.json(trajectories.map(({ id, subjectName }) => ({ id, subjectName })));
 });
 
 // POST a new trajectory

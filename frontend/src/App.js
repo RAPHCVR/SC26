@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { inesMadaniPrecreatedData } from './inesMadaniTrajectoryData'; 
 import { PeriodNode, EventNode, ElementNode } from './CustomNodes';
+import { autoLayout } from './layoutUtils';
 
 const nodeTypes = {
   period: PeriodNode,
@@ -30,7 +31,7 @@ const API_URL = 'http://localhost:5001/api/trajectories';
 function TrajectoryApp() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { project, getNodes, getNode, setViewport } = useReactFlow(); // Ajout de getNodes, getNode
+  const { project, getNodes, getNode, setViewport, fitView } = useReactFlow(); // Ajout de getNodes, getNode, fitView
 
   const [trajectories, setTrajectories] = useState([]);
   const [currentTrajectoryId, setCurrentTrajectoryId] = useState(null);
@@ -184,6 +185,17 @@ function TrajectoryApp() {
     } catch (error) { console.error("Erreur sauvegarde:", error); alert("Échec sauvegarde."); }
   };
 
+    // Layout automatique des nœuds
+    const handleAutoLayout = useCallback(() => {
+      setNodes((nds) => {
+        const updated = autoLayout(nds);
+        setTimeout(() => {
+          fitView({ padding: 0.2 });
+        }, 0);
+        return updated;
+      });
+    }, [setNodes, fitView]);
+  
   const onNodesDelete = useCallback(
     (deletedNodes) => {
       let allNodeIdsToDelete = new Set(deletedNodes.map(n => n.id));
@@ -269,6 +281,7 @@ function TrajectoryApp() {
         <button onClick={handleSaveTrajectory} disabled={!currentTrajectoryId}>
           Sauvegarder Trajectoire Actuelle
         </button>
+        <button onClick={handleAutoLayout}>Disposition automatique</button>
       </div>
       <div className="status-bar">
         {currentTrajectoryId ? (
@@ -323,6 +336,8 @@ function TrajectoryApp() {
         </div>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
           <ReactFlow
+            minZoom={0.01}
+            maxZoom={10}
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
