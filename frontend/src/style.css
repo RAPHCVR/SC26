@@ -1,9 +1,9 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  background-color: #eef1f5; /* Un gris plus doux */
+  background-color: #eef1f5; /* Softer grey */
   color: #333;
-  overflow: hidden; /* Empêcher le scroll du body */
+  overflow: hidden; /* Prevent body scroll */
 }
 
 #root {
@@ -26,7 +26,7 @@ body {
   display: flex;
   gap: 15px;
   align-items: center;
-  flex-wrap: wrap; /* Permet le retour à la ligne */
+  flex-wrap: wrap; 
 }
 
 .main-controls-bar input[type="text"],
@@ -43,7 +43,7 @@ body {
 
 .main-controls-bar button {
   cursor: pointer;
-  background-color: #eceff1; /* Bleu-gris clair */
+  background-color: #eceff1; 
   color: #37474f;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -66,13 +66,13 @@ body {
   color: #546e7a;
 }
 .status-bar strong {
-  color: #1e88e5; /* Bleu */
+  color: #1e88e5; 
 }
 
 .content-area {
   display: flex;
   flex-grow: 1;
-  overflow: hidden; /* Important */
+  overflow: hidden; 
 }
 
 .sidebar {
@@ -117,7 +117,7 @@ body {
   padding: 5px 8px;
   font-size: 0.8em;
   margin-left: 8px;
-  background-color: #e3f2fd; /* Bleu très clair */
+  background-color: #e3f2fd; 
   border: 1px solid #90caf9;
   color: #1976d2;
 }
@@ -127,21 +127,20 @@ body {
 
 .reactflow-wrapper {
   flex-grow: 1;
-  height: 100%; /* React Flow a besoin de cela */
-  position: relative; /* Pour le positionnement du Panel */
+  height: 100%; 
+  position: relative; 
 }
 
-
-/* Custom Node Styles (Améliorés) */
-.custom-node { /* Classe de base pour tous nos nœuds custom */
+/* Custom Node Styles */
+.custom-node { 
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  padding: 12px; /* Un padding de base */
+  padding: 12px; 
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  border: 1px solid transparent; /* Pour l'effet de sélection */
+  border: 1px solid transparent; 
 }
 .custom-node.selected {
-  border-color: #673ab7; /* Violet pour la sélection */
+  border-color: #673ab7; 
   box-shadow: 0 0 0 2px #673ab7, 0 4px 8px rgba(0,0,0,0.2);
 }
 .custom-node-label {
@@ -150,89 +149,101 @@ body {
   padding-bottom: 5px;
   border-bottom: 1px solid rgba(0,0,0,0.1);
   display: block;
-  color: #263238; /* Gris foncé pour le texte */
+  color: #263238; 
 }
 
 .period-node {
-  background: #e3f2fd; /* Bleu très clair */
+  background: #e3f2fd; 
   border: 1px solid #90caf9;
-  min-width: 300px; /* Plus large pour contenir des événements */
-  min-height: 200px;
+  /* min-width and min-height are effectively set by NodeResizer and initial state in component */
   text-align: center;
 }
 .period-node .custom-node-label {
-  color: #1565c0; /* Bleu foncé pour le label */
+  color: #1565c0; 
 }
 
 .event-node {
-  background: #e8f5e9; /* Vert très clair */
+  background: #e8f5e9; 
   border: 1px solid #a5d6a7;
-  min-width: 250px; /* Plus large pour contenir des éléments */
-  min-height: 150px;
   text-align: center;
 }
 .event-node .custom-node-label {
-  color: #2e7d32; /* Vert foncé pour le label */
+  color: #2e7d32; 
 }
 
 .element-node {
-  padding: 10px; /* Un peu plus de padding interne */
-  min-width: 200px;
+  padding: 10px; 
+  /* min-width from NodeResizer */
   text-align: left;
   font-size: 0.85em;
-  position: relative; /* Pour les poignées */
+  position: relative; /* For Handles */
 }
 .element-node .custom-node-label {
-  font-size: 0.9em; /* Un peu plus petit */
+  font-size: 0.9em; 
   margin-bottom: 5px;
 }
 .element-node-text {
   font-size: 0.95em;
   color: #455a64;
+  word-break: break-word; /* Allow long text to wrap */
 }
 
-
+/* Element types specific styling */
 .element-node.Fait { background: #ffcdd2; border: 1px solid #c62828; }
 .element-node.Fait .custom-node-label { color: #b71c1c; }
 
 .element-node.Contexte { background: #e1bee7; border: 1px solid #6a1b9a; }
 .element-node.Contexte .custom-node-label { color: #4a148c; }
 
-.element-node.Vécu { background: #c8e6c9; border: 1px solid #388e3c; }
+.element-node.Vécu { background: #c8e6c9; border: 1px solid #388e3c; } /* Corrected class name */
 .element-node.Vécu .custom-node-label { color: #1b5e20; }
 
-.element-node.Action { background: #fff9c4; border: 1px solid #f9a825; } /* Changé pour un jaune plus doux */
+.element-node.Action { background: #fff9c4; border: 1px solid #f9a825; }
 .element-node.Action .custom-node-label { color: #f57f17; }
 
-.element-node.Encapacitation { background: #ffe0b2; border: 1px solid #ef6c00; } /* Changé pour un orange clair */
+.element-node.Encapacitation { background: #ffe0b2; border: 1px solid #ef6c00; }
 .element-node.Encapacitation .custom-node-label { color: #e65100; }
 
-
+/* React Flow Handles */
 .react-flow__handle {
   width: 10px;
   height: 10px;
-  background: #78909c !important; /* Gris-bleu */
+  background: #78909c !important; 
   border: 1px solid #546e7a !important;
   border-radius: 50%;
 }
-.react-flow__handle-right { right: -6px; }
-.react-flow__handle-left { left: -6px; }
+.react-flow__handle-right { right: -6px; } /* Adjust position to be on the edge */
+.react-flow__handle-left { left: -6px; }  /* Adjust position to be on the edge */
 
-/* Style pour les labels des liens */
+/* Edge label styles */
 .react-flow__edge-text {
   fill: #333;
   font-size: 11px;
   font-weight: 500;
 }
-/* Ensure edges (links) render above nodes */
+
+/* 
+  Z-index stacking order:
+  Ensures edges and their labels render above nodes.
+  Also ensures child nodes (elements) render above their parent containers (events),
+  and events render above periods. This is important for visual clarity when nodes overlap.
+*/
 .reactflow-wrapper .react-flow__edges {
-  z-index: 10 !important;
+  z-index: 10 !important; 
 }
 .reactflow-wrapper .react-flow__edge path,
-.reactflow-wrapper .react-flow__edge text {
-  z-index: 11 !important;
+.reactflow-wrapper .react-flow__edge .react-flow__edge-text { /* Target text specifically too */
+  z-index: 11 !important; /* Edge text might need its own z-index or inherit from path */
 }
-/* Fix overlapping labels: ensure child nodes render above their parent containers */
+
 .react-flow__node.period-node { z-index: 1; }
-.react-flow__node.event-node { z-index: 2; }
-.react-flow__node.element-node { z-index: 3; }
+.react-flow__node.event-node { z-index: 2; } /* Higher than period */
+.react-flow__node.element-node { z-index: 3; } /* Higher than event */
+
+/* Ensure ReactFlow attribution is visible if needed and not covered */
+.react-flow__attribution {
+    z-index: 12 !important; /* Above edges if they might overlap */
+    background: rgba(255,255,255,0.7) !important; /* Make it more readable */
+    padding: 2px 4px !important;
+    border-radius: 3px !important;
+}

@@ -9,14 +9,14 @@ import ReactFlow, {
   Panel,
   useReactFlow,
   ReactFlowProvider,
-  getRectOfNodes, // Pour le zoom sur les enfants
-  getTransformForBounds // Pour le zoom
+  getRectOfNodes,
+  getTransformForBounds
 } from 'reactflow';
-import 'reactflow/dist/style.css'; // Assurez-vous que c'est importé
+import 'reactflow/dist/style.css';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
-import { inesMadaniPrecreatedData } from './inesMadaniTrajectoryData'; 
+import { inesMadaniPrecreatedData } from './inesMadaniTrajectoryData';
 import { PeriodNode, EventNode, ElementNode } from './CustomNodes';
 import { autoLayout } from './layoutUtils';
 
@@ -31,7 +31,7 @@ const API_URL = 'http://localhost:5001/api/trajectories';
 function TrajectoryApp() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { project, getNodes, getNode, setViewport, fitView } = useReactFlow(); // Ajout de getNodes, getNode, fitView
+  const { project, getNodes, getNode, setViewport, fitView } = useReactFlow();
 
   const [trajectories, setTrajectories] = useState([]);
   const [currentTrajectoryId, setCurrentTrajectoryId] = useState(null);
@@ -59,10 +59,10 @@ function TrajectoryApp() {
       const newEdge = {
         ...params,
         id: uuidv4(),
-        type: 'smoothstep', // Type de lien plus esthétique
+        type: 'smoothstep',
         label: linkType,
-        markerEnd: { type: 'arrowclosed' }, // Ajoute une flèche
-        style: { strokeWidth: 1.5, stroke: '#546e7a' }, // Style du lien
+        markerEnd: { type: 'arrowclosed' },
+        style: { strokeWidth: 1.5, stroke: '#546e7a' },
         labelStyle: { fill: '#333', fontWeight: 500, fontSize: 11 },
         labelBgPadding: [4, 2],
         labelBgBorderRadius: 2,
@@ -74,33 +74,49 @@ function TrajectoryApp() {
 
   const addNode = useCallback((type, parentId = null) => {
     const label = prompt(`Entrez le nom/texte pour ce nouveau ${type}:`, `Nouveau ${type}`);
-    if (!label) return; // User cancelled
+    if (!label) return;
 
     const id = uuidv4();
     let newNode;
     let position;
     const parentNode = parentId ? getNode(parentId) : null;
 
+    const DEFAULT_NODE_WIDTH = 150;
+    const DEFAULT_NODE_HEIGHT = 50;
+
     if (parentNode) {
-        const childNodes = getNodes().filter(n => n.parentNode === parentId);
-        position = { x: 20, y: (childNodes.length * 80) + 40 }; // Positionnement simple à l'intérieur du parent
-        // Zoom sur le parent après ajout
-        setTimeout(() => { // léger délai pour que le noeud soit rendu
-            const nodesToFit = [parentNode, ...childNodes, {id, position, width:150, height:50}]; // Inclut le nouveau noeud estimé
-            const rect = getRectOfNodes(nodesToFit);
-            const transform = getTransformForBounds(rect, parentNode.width, parentNode.height, 0.1, 2);
-            setViewport({ x: transform[0], y: transform[1], zoom: transform[2] }, { duration: 300 });
-        }, 100);
+      const childNodes = getNodes().filter(n => n.parentNode === parentId);
+      position = { x: 20, y: (childNodes.length * 80) + 40 }; // Simple positioning within parent
 
+      setTimeout(() => {
+        const nodesToFit = [
+            parentNode, 
+            ...childNodes, 
+            // Include a representation of the new node for accurate bounds calculation
+            { 
+                id, 
+                position, 
+                width: DEFAULT_NODE_WIDTH, // Use default or estimated size
+                height: DEFAULT_NODE_HEIGHT,
+                parentNode: parentId // Important for getRectOfNodes with parent nodes
+            }
+        ];
+        // Ensure parentNode has width and height for getTransformForBounds
+        const parentWidth = parentNode.width || 500; // Fallback if not set
+        const parentHeight = parentNode.height || 300; // Fallback if not set
 
+        const rect = getRectOfNodes(nodesToFit.map(n => getNode(n.id) || n)); // Use actual node if available
+        const transform = getTransformForBounds(rect, parentWidth, parentHeight, 0.1, 2);
+        setViewport({ x: transform[0], y: transform[1], zoom: transform[2] }, { duration: 300 });
+      }, 100);
     } else if (reactFlowWrapper.current) {
-        const bounds = reactFlowWrapper.current.getBoundingClientRect();
-        position = project({
-            x: bounds.width / 2 - 150, // Ajuster pour la taille du noeud
-            y: bounds.height / 2 - 100,
-        });
+      const bounds = reactFlowWrapper.current.getBoundingClientRect();
+      position = project({
+        x: bounds.width / 2 - DEFAULT_NODE_WIDTH / 2,
+        y: bounds.height / 2 - DEFAULT_NODE_HEIGHT / 2,
+      });
     } else {
-        position = { x: Math.random() * 200 + 50, y: Math.random() * 100 + 50 };
+      position = { x: Math.random() * 200 + 50, y: Math.random() * 100 + 50 };
     }
 
     switch (type) {
@@ -119,9 +135,8 @@ function TrajectoryApp() {
     setNodes((nds) => nds.concat(newNode));
   }, [project, getNode, getNodes, setNodes, setViewport]);
 
-
   const onNodeDoubleClick = useCallback((event, node) => {
-    const newLabel = prompt(`Modifier le nom/texte:`, node.data.label);
+    const newLabel = prompt("Modifier le nom/texte:", node.data.label);
     if (newLabel !== null && newLabel !== node.data.label) {
       setNodes((nds) =>
         nds.map((n) =>
@@ -151,7 +166,6 @@ function TrajectoryApp() {
       setNodes([]);
       setEdges([]);
       setNewTrajectoryName('');
-      // alert(`Trajectoire "${subjectName}" créée et chargée.`);
     } catch (error) { console.error("Erreur création:", error); alert("Échec création."); }
   };
 
@@ -163,16 +177,14 @@ function TrajectoryApp() {
       setEdges(trajectoryData.edges || []);
       setCurrentTrajectoryId(trajectoryIdToLoad);
       setCurrentTrajectoryName(trajectoryData.subjectName);
-      // alert(`Trajectoire "${trajectoryData.subjectName}" chargée.`);
     } catch (error) { console.error("Erreur chargement:", error); alert("Échec chargement."); }
   };
 
   const handleSaveTrajectory = async () => {
     if (!currentTrajectoryId) { alert("Aucune trajectoire chargée."); return; }
     try {
-      // React Flow ajoute des propriétés internes aux nodes/edges, il faut les nettoyer pour la sauvegarde
-      const cleanNodes = nodes.map(({ selected, dragging, ...rest }) => ({...rest, data: {...rest.data}}));
-      const cleanEdges = edges.map(({ selected, ...rest }) => ({...rest, data: {...rest.data}}));
+      const cleanNodes = nodes.map(({ selected, dragging, positionAbsolute, ...rest }) => ({...rest, data: {...rest.data}}));
+      const cleanEdges = edges.map(({ selected, ...rest }) => rest); // Edges usually don't have problematic extra data like nodes
 
       const payload = {
         subjectName: currentTrajectoryName,
@@ -181,31 +193,32 @@ function TrajectoryApp() {
       };
       await axios.put(`${API_URL}/${currentTrajectoryId}`, payload);
       alert(`Trajectoire "${currentTrajectoryName}" sauvegardée !`);
-      fetchTrajectories();
+      fetchTrajectories(); // Refresh list in case name was changed on backend (though not implemented here)
     } catch (error) { console.error("Erreur sauvegarde:", error); alert("Échec sauvegarde."); }
   };
 
-    // Layout automatique des nœuds
-    const handleAutoLayout = useCallback(() => {
-      setNodes((nds) => {
-        const updated = autoLayout(nds);
-        setTimeout(() => {
-          fitView({ padding: 0.2 });
-        }, 0);
-        return updated;
-      });
-    }, [setNodes, fitView]);
-  
+  const handleAutoLayout = useCallback(() => {
+    setNodes((nds) => {
+      const updatedNodes = autoLayout(nds, getNodes); // Pass getNodes if layout needs current state
+      // Fit view after layout applied and nodes potentially re-rendered
+      setTimeout(() => {
+        fitView({ padding: 0.2, duration: 300 });
+      }, 0);
+      return updatedNodes;
+    });
+  }, [setNodes, fitView, getNodes]);
+
   const onNodesDelete = useCallback(
     (deletedNodes) => {
-      let allNodeIdsToDelete = new Set(deletedNodes.map(n => n.id));
-      let currentNodes = getNodes(); // Utiliser la version la plus à jour
+      const allNodeIdsToDelete = new Set(deletedNodes.map(n => n.id));
+      const currentGraphNodes = getNodes(); // Use the most up-to-date nodes from the store
 
       function findChildrenRecursive(parentId) {
-        currentNodes.forEach(n => {
+        currentGraphNodes.forEach(n => {
           if (n.parentNode === parentId) {
             allNodeIdsToDelete.add(n.id);
-            if (n.type === 'period' || n.type === 'event') { // Si le parent est un conteneur
+            // If the child is also a container, recurse
+            if (n.type === 'period' || n.type === 'event') {
               findChildrenRecursive(n.id);
             }
           }
@@ -221,52 +234,57 @@ function TrajectoryApp() {
       setEdges((eds) => eds.filter(edge => 
         !allNodeIdsToDelete.has(edge.source) && !allNodeIdsToDelete.has(edge.target)
       ));
-      // La suppression des noeuds eux-mêmes est gérée par onNodesChange si on ne le surcharge pas complètement
+      // Node deletion itself is handled by React Flow's internal onNodesChange
+      // if we don't completely override its behavior.
     },
-    [getNodes, setEdges]
+    [getNodes, setEdges] 
   );
 
   const getSelectedNode = () => nodes.find(n => n.selected);
 
-  const loadPrecreatedInesMadani = () => {
-  const { nodes: precreatedNodes, edges: precreatedEdges } = inesMadaniPrecreatedData();
-  
-  // Simuler la création/chargement d'une trajectoire pour ces données
-  const precreatedTrajectoryId = 'ines-madani-precreated';
-  const precreatedTrajectoryName = "Inès Madani (Prédéfinie)";
+  const loadPrecreatedInesMadani = async () => {
+    const { nodes: precreatedNodes, edges: precreatedEdges } = inesMadaniPrecreatedData();
+    const precreatedTrajectoryId = 'ines-madani-precreated';
+    const precreatedTrajectoryName = "Inès Madani (Prédéfinie)";
 
-  // Vérifier si elle existe déjà dans la liste (pour éviter doublons si re-cliqué)
-  const existing = trajectories.find(t => t.id === precreatedTrajectoryId);
-  if (!existing) {
+    const existing = trajectories.find(t => t.id === precreatedTrajectoryId);
+    if (!existing) {
       setTrajectories(prev => [...prev, {id: precreatedTrajectoryId, subjectName: precreatedTrajectoryName}]);
-  }
+    }
 
-  setCurrentTrajectoryId(precreatedTrajectoryId);
-  setCurrentTrajectoryName(precreatedTrajectoryName);
-  setNodes(precreatedNodes);
-  setEdges(precreatedEdges);
-  alert(`Trajectoire prédéfinie "${precreatedTrajectoryName}" chargée.`);
+    setCurrentTrajectoryId(precreatedTrajectoryId);
+    setCurrentTrajectoryName(precreatedTrajectoryName);
+    setNodes(precreatedNodes);
+    setEdges(precreatedEdges);
+    // Fit view after loading these extensive nodes
+    setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 100);
 
-  // Sauvegarder automatiquement cette trajectoire prédéfinie au backend (in-memory)
-  // pour qu'elle apparaisse dans la liste des sauvegardées si l'utilisateur la modifie et sauvegarde
-  const payload = {
-    subjectName: precreatedTrajectoryName,
-    nodes: precreatedNodes.map(({ selected, dragging, ...rest }) => ({...rest, data: {...rest.data}})),
-    edges: precreatedEdges.map(({ selected, ...rest }) => ({...rest, data: {...rest.data}})),
-  };
-  
-  axios.put(`${API_URL}/${precreatedTrajectoryId}`, payload)
-    .catch(err => {
-        // Si elle n'existe pas, on la crée
+
+    const payload = {
+      subjectName: precreatedTrajectoryName,
+      nodes: precreatedNodes.map(({ selected, dragging, positionAbsolute, ...rest }) => ({...rest, data: {...rest.data}})),
+      edges: precreatedEdges.map(({ selected, ...rest }) => rest),
+    };
+
+    try {
+        // Try to update it if it exists (e.g., user loaded, modified, then re-clicked "load predefined")
+        await axios.put(`${API_URL}/${precreatedTrajectoryId}`, payload);
+    } catch (err) {
+        // If it doesn't exist (404), create it.
         if (err.response && err.response.status === 404) {
-             axios.post(API_URL, { id: precreatedTrajectoryId, ...payload})
-                .then(() => fetchTrajectories()) // Rafraichir la liste
-                .catch(creationError => console.error("Error auto-creating precreated trajectory:", creationError));
+            try {
+                await axios.post(API_URL, { id: precreatedTrajectoryId, ...payload }); // Backend should handle 'id' if provided
+            } catch (creationError) {
+                console.error("Error auto-creating precreated trajectory:", creationError);
+            }
         } else {
-            console.error("Error auto-saving precreated trajectory:", err);
+            console.error("Error auto-saving precreated trajectory (PUT failed):", err);
         }
-    }).then(() => fetchTrajectories()); // Rafraichir la liste
-};
+    } finally {
+        fetchTrajectories(); // Refresh the list from backend
+        alert(`Trajectoire prédéfinie "${precreatedTrajectoryName}" chargée et synchronisée.`);
+    }
+  };
 
   return (
     <div className="app-container">
@@ -287,7 +305,7 @@ function TrajectoryApp() {
         {currentTrajectoryId ? (
           <span>Trajectoire active : <strong>{currentTrajectoryName}</strong></span>
         ) : (
-          <span>Aucune trajectoire chargée. Créez-en une ou chargez-en une depuis la barre latérale.</span>
+          <span>Aucune trajectoire chargée. Créez-en une ou chargez-en une.</span>
         )}
       </div>
       <div className="content-area">
@@ -307,32 +325,36 @@ function TrajectoryApp() {
               </ul>
             )}
           </div>
-           <div className="node-actions">
-             <h3>Actions sur Nœuds :</h3>
-              <button onClick={() => addNode('Période')}>Ajouter Période</button>
-              <button onClick={() => {
-                  const selected = getSelectedNode();
-                  if (selected && selected.type === 'period') addNode('Événement', selected.id);
-                  else alert("Sélectionnez une Période pour y ajouter un Événement.");
-              }} disabled={!getSelectedNode() || getSelectedNode()?.type !== 'period'}>
-                Ajouter Événement (à la Période sél.)
-              </button>
-              {['Fait', 'Contexte', 'Vécu', 'Action', 'Encapacitation'].map(type => (
-                <button style={{marginTop:'5px', width:'100%'}} key={type} onClick={() => {
+          <div className="node-actions">
+            <h3>Actions sur Nœuds :</h3>
+            <button onClick={() => addNode('Période')}>Ajouter Période</button>
+            <button 
+              onClick={() => {
+                const selected = getSelectedNode();
+                if (selected && selected.type === 'period') addNode('Événement', selected.id);
+                else alert("Sélectionnez une Période pour y ajouter un Événement.");
+              }} 
+              disabled={!getSelectedNode() || getSelectedNode()?.type !== 'period'}>
+              Ajouter Événement (à Période sél.)
+            </button>
+            {['Fait', 'Contexte', 'Vécu', 'Action', 'Encapacitation'].map(type => (
+              <button style={{marginTop:'5px', width:'100%'}} key={type} 
+                onClick={() => {
                   const selected = getSelectedNode();
                   if (selected && selected.type === 'event') addNode(type, selected.id);
                   else alert("Sélectionnez un Événement pour y ajouter un Élément.");
-                }} disabled={!getSelectedNode() || getSelectedNode()?.type !== 'event'}>
-                  {`Ajouter ${type} (à l'Événement sél.)`}
-                </button>
-              ))}
-           </div>
-           <div className="precreated-trajectory" style={{marginTop: '20px'}}>
-              <h3>Exemple Prédéfinie :</h3>
-              <button onClick={loadPrecreatedInesMadani} style={{width: '100%', backgroundColor: '#d1c4e9', borderColor: '#9575cd'}}>
-                  Charger Cas Inès Madani
+                }} 
+                disabled={!getSelectedNode() || getSelectedNode()?.type !== 'event'}>
+                {`Ajouter ${type} (à Événement sél.)`}
               </button>
-           </div>
+            ))}
+          </div>
+          <div className="precreated-trajectory" style={{marginTop: '20px'}}>
+            <h3>Exemple Prédéfini :</h3>
+            <button onClick={loadPrecreatedInesMadani} style={{width: '100%', backgroundColor: '#d1c4e9', borderColor: '#9575cd'}}>
+              Charger Cas Inès Madani
+            </button>
+          </div>
         </div>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
           <ReactFlow
