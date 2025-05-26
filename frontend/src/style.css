@@ -319,3 +319,67 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Styles pour la vue "Plans de Vie" */
+.highlight-plan-element {
+  border-width: 2px !important; /* Plus visible */
+  /* exemple: border-color: #ff9800 !important; /* Orange pour la mise en évidence */
+  /* box-shadow: 0 0 8px #ff9800 !important; */
+  opacity: 1 !important;
+  transform: scale(1.02); /* Léger agrandissement */
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+.element-node.Action.highlight-plan-element {
+    border-color: #e65100 !important; /* Utilise une couleur en lien avec le type */
+    box-shadow: 0 0 6px #e65100aa !important;
+}
+.element-node.Encapacitation.highlight-plan-element {
+    border-color: #d81b60 !important; /* Couleur distincte pour Encapacitation */
+    box-shadow: 0 0 6px #d81b60aa !important;
+}
+
+
+.dim-plan-element {
+  opacity: 0.5 !important;
+  transition: opacity 0.2s ease-out;
+}
+
+.dim-parent-in-plan-view { /* Pour Période et Événement */
+  opacity: 0.65;
+  /* background-color: #f5f5f5 !important; /* Optionnel: les rendre plus neutres */
+  /* border-color: #e0e0e0 !important; */
+}
+
+/* Style pour le toggle de mode de vue */
+.view-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto; /* Pousse le toggle à droite */
+}
+.view-mode-toggle span {
+  font-size: 0.9em;
+  color: #546e7a;
+}
+.view-mode-toggle button {
+  padding: 6px 10px;
+  font-size: 0.85em;
+}
+.view-mode-toggle button:disabled {
+  background-color: #b0bec5; /* Plus foncé pour l'état actif/désactivé */
+  color: white;
+  border-color: #78909c;
+}
+
+/* Couleur spécifique pour Encapacitation */
+.element-node.Encapacitation { background: #fce4ec; border: 1px solid #f06292; } /* Rose pâle */
+.element-node.Encapacitation .custom-node-label { color: #d81b60; } /* Rose foncé */
+
+/* Assurez-vous que les simplified nodes héritent aussi des modificateurs de plans de vie */
+.simplified-node.highlight-plan-element {
+  border-width: 2px !important;
+  transform: scale(1.05);
+}
+.simplified-node.dim-plan-element {
+  opacity: 0.4 !important;
+}
