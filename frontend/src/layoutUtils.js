@@ -4,16 +4,16 @@ export function autoLayout(nodes) {
   const widthDefault = { period: 350, event: 300, element: 180 };
   const heightDefault = { period: 250, event: 200, element: 60 };
   
-  const eventSpacing = 50; // Horizontal spacing between event nodes within a period.
-  const elementSpacing = 20; // Vertical spacing between element nodes within an event.
+  const eventSpacing = 70; // Horizontal spacing between event nodes within a period.
+  const elementSpacing = 30; // Vertical spacing between element nodes within an event.
   
   // Vertical offsets to position children below the parent's label/header area.
-  const periodHeaderYOffset = 60; 
-  const eventHeaderYOffset = 40;
+  const periodHeaderYOffset = 70; 
+  const eventHeaderYOffset = 50;
 
   // Horizontal offsets for children from the parent's left edge.
-  const eventXOffset = 20;
-  const elementXOffset = 20;
+  const eventXOffset = 30;
+  const elementXOffset = 30;
 
   // Create a new array of nodes to avoid mutating the original state directly.
   const newNodes = nodes.map(n => ({ ...n }));

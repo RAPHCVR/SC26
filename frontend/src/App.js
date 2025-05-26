@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { inesMadaniPrecreatedData } from './inesMadaniTrajectoryData';
 import { PeriodNode, EventNode, ElementNode } from './CustomNodes';
+import TreeView from './TreeView';
 import { autoLayout } from './layoutUtils';
 
 const nodeTypes = {
@@ -31,7 +32,7 @@ const API_URL = 'http://localhost:5001/api/trajectories';
 function TrajectoryApp() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { project, getNodes, getNode, setViewport, fitView } = useReactFlow();
+  const { project, getNodes, getNode, setViewport, fitView, setCenter, fitBounds } = useReactFlow();
 
   const [trajectories, setTrajectories] = useState([]);
   const [currentTrajectoryId, setCurrentTrajectoryId] = useState(null);
@@ -61,8 +62,8 @@ function TrajectoryApp() {
         id: uuidv4(),
         type: 'smoothstep',
         label: linkType,
-        markerEnd: { type: 'arrowclosed' },
-        style: { strokeWidth: 1.5, stroke: '#546e7a' },
+        markerEnd: { type: 'arrowclosed', width: 20, height: 20 },
+        style: { strokeWidth: 2.5, stroke: '#546e7a' },
         labelStyle: { fill: '#333', fontWeight: 500, fontSize: 11 },
         labelBgPadding: [4, 2],
         labelBgBorderRadius: 2,
@@ -286,6 +287,27 @@ function TrajectoryApp() {
     }
   };
 
+  const handleNodeSelectFromTreeView = useCallback((nodeId) => {
+    const node = getNode(nodeId);
+    if (node) {
+      // Option 2: Fit view to the node (plus robuste si le noeud est un parent)
+      const nodeToFit = {
+        ...node,
+        width: node.width || 150, // Provide default if not set
+        height: node.height || 50,
+      };
+      const bounds = getRectOfNodes([nodeToFit]);
+      fitBounds(bounds, { padding: 0.2, duration: 600 });
+
+      setNodes((nds) =>
+        nds.map((n) => ({
+          ...n,
+          selected: n.id === nodeId,
+        }))
+      );
+    }
+  }, [getNode, setCenter, fitBounds, setNodes, getRectOfNodes]); // getRectOfNodes est déjà importé
+
   return (
     <div className="app-container">
       <div className="main-controls-bar">
@@ -355,6 +377,7 @@ function TrajectoryApp() {
               Charger Cas Inès Madani
             </button>
           </div>
+          <TreeView nodes={nodes} onNodeClick={handleNodeSelectFromTreeView} />
         </div>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
           <ReactFlow

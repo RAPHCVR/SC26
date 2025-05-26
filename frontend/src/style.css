@@ -247,3 +247,75 @@ body {
     padding: 2px 4px !important;
     border-radius: 3px !important;
 }
+
+/* Simplified Node Styles */
+.simplified-node {
+  padding: 5px;
+  border: 1px dashed #ccc;
+  background-color: #f0f0f0;
+  text-align: center;
+  font-size: 10px; /* Plus petit pour la vue simplifiée */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* TreeView Styles */
+.tree-view-container {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #eceff1;
+}
+
+.tree-view-container h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1em; /* Ajusté pour être similaire aux autres h3 de la sidebar */
+  color: #37474f;
+}
+
+.tree-view-container ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.tree-view-container li {
+  padding: 4px 0;
+  font-size: 0.9em;
+  cursor: pointer; /* Déjà dans le style en ligne, mais bon à avoir ici */
+  border-radius: 4px;
+}
+
+.tree-view-container li:hover {
+  background-color: #f0f4f8;
+}
+
+/* Pour l'indentation, le style en ligne est utilisé, mais on peut le standardiser ici si besoin */
+.tree-view-container ul ul li { /* Enfants plus imbriqués */
+  /* padding-left: 20px; /* Contrôlé par le style en ligne 'level' */
+}
+
+/* Styles for Handles in simplified nodes, if not overridden by inline styles */
+.simplified-node .react-flow__handle {
+  width: 6px !important;
+  height: 6px !important;
+  min-width: 6px !important; /* ensure override if other styles try to set min-width */
+  min-height: 6px !important; /* ensure override if other styles try to set min-height */
+}
+.simplified-node .react-flow__handle-left { 
+  left: -4px !important; 
+}
+.simplified-node .react-flow__handle-right { 
+  right: -4px !important; 
+}
+
+.simplified-node .custom-node-label {
+  font-weight: normal; /* Plus léger que le label normal */
+  font-size: 9px;
+  border-bottom: none; /* Pas de bordure pour la simplicité */
+  display: block; /* Ensure it takes up the line for text-overflow to work */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
