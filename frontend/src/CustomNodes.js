@@ -41,14 +41,17 @@ const PeriodNodeComponent = ({ id, data, selected }) => {
 
   useEffect(() => {
     if (childBounds) {
-      // Adjust size if childBounds are larger than current size.
-      // This makes the node grow to accommodate children, but not shrink automatically.
-      setSize(prevSize => ({
-        width: Math.max(prevSize.width, childBounds.width),
-        height: Math.max(prevSize.height, childBounds.height)
-      }));
+      setSize(prevSize => {
+        // Ajuste la taille uniquement si elle augmente, pour éviter les re-renders inutiles
+        const newWidth = Math.max(prevSize.width, childBounds.width);
+        const newHeight = Math.max(prevSize.height, childBounds.height);
+        if (newWidth !== prevSize.width || newHeight !== prevSize.height) {
+          return { width: newWidth, height: newHeight };
+        }
+        return prevSize;
+      });
     }
-  }, [childBounds]); // Re-run when childBounds change
+  }, [childBounds]);
 
   if (currentZoom < zoomThreshold) {
     return (
@@ -82,10 +85,15 @@ const EventNodeComponent = ({ id, data, selected }) => {
 
   useEffect(() => {
     if (childBounds) {
-      setSize(prevSize => ({
-        width: Math.max(prevSize.width, childBounds.width),
-        height: Math.max(prevSize.height, childBounds.height)
-      }));
+      setSize(prevSize => {
+        // Ajuste la taille uniquement si elle augmente, pour éviter les re-renders inutiles
+        const newWidth = Math.max(prevSize.width, childBounds.width);
+        const newHeight = Math.max(prevSize.height, childBounds.height);
+        if (newWidth !== prevSize.width || newHeight !== prevSize.height) {
+          return { width: newWidth, height: newHeight };
+        }
+        return prevSize;
+      });
     }
   }, [childBounds]);
 
