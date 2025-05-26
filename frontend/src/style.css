@@ -120,6 +120,16 @@ body {
   position: relative;
 }
 
+.treeview-panel-right {
+  width: 250px; /* Ajuster cette largeur selon les besoins */
+  padding: 15px;
+  background: #fdfdff; /* Même couleur que le sidebar ou une autre */
+  border-left: 1px solid #d1d9e6;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
 /* --- REACTFLOW & NODE STYLES --- */
 .custom-node {
   border-radius: 8px;
@@ -350,17 +360,28 @@ body {
 
 /* --- TREEVIEW & MISC --- */
 .tree-view-container {
-  margin-top: 20px;
-  padding-top: 10px;
-  border-top: 1px solid #eceff1;
+  margin-top: 0; /* Le panneau parent gère l'espacement */
+  padding-top: 0; /* Le panneau parent gère l'espacement */
+  border-top: none; /* Le panneau parent a une bordure si nécessaire */
+  flex-grow: 1; /* S'étend dans le panneau parent */
+  display: flex;
+  flex-direction: column;
 }
 .tree-view-container h3 {
   margin-top: 0;
   margin-bottom: 10px;
-  font-size: 1em;
+  font-size: 1.1em; /* Un peu plus grand maintenant qu'il est un titre de panneau */
   color: #37474f;
+  border-bottom: 1px solid #eceff1; /* Conserver pour séparer le titre de la liste */
+  padding-bottom: 5px;
 }
-.tree-view-container ul { list-style: none; padding-left: 0; margin: 0; }
+.tree-view-container ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  overflow-y: auto; /* Permet le défilement de la liste si elle est trop longue */
+  flex-grow: 1; /* La liste prend l'espace restant dans le conteneur */
+}
 .tree-view-container li {
   padding: 4px 0;
   font-size: 0.9em;

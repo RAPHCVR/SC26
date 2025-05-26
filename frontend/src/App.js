@@ -426,7 +426,6 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
               Charger Cas Inès Madani
             </button>
           </div>
-          <TreeView nodes={nodes} onNodeClick={handleNodeSelectFromTreeView} />
         </div>
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
           <ReactFlow
@@ -452,6 +451,9 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
             <MiniMap nodeStrokeWidth={3} zoomable pannable />
             <Controls />
           </ReactFlow>
+        </div>
+        <div className="treeview-panel-right">
+          <TreeView nodes={nodes} onNodeClick={handleNodeSelectFromTreeView} />
         </div>
       </div>
     </div>
