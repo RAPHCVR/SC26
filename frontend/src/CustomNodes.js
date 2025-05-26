@@ -40,18 +40,17 @@ const PeriodNodeComponent = ({ id, data, selected }) => {
   const [size, setSize] = useState({ width: 350, height: 250 }); // Initial default size
 
   useEffect(() => {
-    if (childBounds) {
-      setSize(prevSize => {
-        // Ajuste la taille uniquement si elle augmente, pour éviter les re-renders inutiles
-        const newWidth = Math.max(prevSize.width, childBounds.width);
-        const newHeight = Math.max(prevSize.height, childBounds.height);
-        if (newWidth !== prevSize.width || newHeight !== prevSize.height) {
-          return { width: newWidth, height: newHeight };
-        }
-        return prevSize;
-      });
-    }
-  }, [childBounds]);
+    if (!childBounds) return;
+    const { width: cbWidth, height: cbHeight } = childBounds;
+    setSize(prevSize => {
+      const newWidth = Math.max(prevSize.width, cbWidth);
+      const newHeight = Math.max(prevSize.height, cbHeight);
+      if (newWidth !== prevSize.width || newHeight !== prevSize.height) {
+        return { width: newWidth, height: newHeight };
+      }
+      return prevSize;
+    });
+  }, [childBounds?.width, childBounds?.height]);
 
   if (currentZoom < zoomThreshold) {
     return (
@@ -84,18 +83,17 @@ const EventNodeComponent = ({ id, data, selected }) => {
   const [size, setSize] = useState({ width: 300, height: 200 }); // Initial default size
 
   useEffect(() => {
-    if (childBounds) {
-      setSize(prevSize => {
-        // Ajuste la taille uniquement si elle augmente, pour éviter les re-renders inutiles
-        const newWidth = Math.max(prevSize.width, childBounds.width);
-        const newHeight = Math.max(prevSize.height, childBounds.height);
-        if (newWidth !== prevSize.width || newHeight !== prevSize.height) {
-          return { width: newWidth, height: newHeight };
-        }
-        return prevSize;
-      });
-    }
-  }, [childBounds]);
+    if (!childBounds) return;
+    const { width: cbWidth, height: cbHeight } = childBounds;
+    setSize(prevSize => {
+      const newWidth = Math.max(prevSize.width, cbWidth);
+      const newHeight = Math.max(prevSize.height, cbHeight);
+      if (newWidth !== prevSize.width || newHeight !== prevSize.height) {
+        return { width: newWidth, height: newHeight };
+      }
+      return prevSize;
+    });
+  }, [childBounds?.width, childBounds?.height]);
 
   if (currentZoom < zoomThreshold) {
     return (
