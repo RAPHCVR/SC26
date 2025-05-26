@@ -7,7 +7,6 @@ import ReactFlow, {
   addEdge,
   useNodesState,
   useEdgesState,
-  Panel, // Assurez-vous que Panel est importé si vous l'utilisez, sinon enlevez-le.
   useReactFlow,
   ReactFlowProvider,
   getRectOfNodes,
@@ -22,7 +21,7 @@ import { inesMadaniPrecreatedData } from './inesMadaniTrajectoryData';
 import { PeriodNode, EventNode, ElementNode } from './CustomNodes';
 import TreeView from './TreeView';
 import { autoLayout } from './layoutUtils';
-import { ViewModeProvider, useViewMode } from './ViewModeContext'; // <<<< NOUVEAU
+import { ViewModeProvider, useViewMode } from './ViewModeContext';
 
 const nodeTypes = {
   period: PeriodNode,
@@ -50,7 +49,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
 
   const reactFlowWrapper = useRef(null);
   const currentZoom = useStore((store) => store.transform[2]);
-  const { viewMode, setViewMode } = useViewMode(); // <<<< NOUVEAU
+  const { viewMode, setViewMode, alwaysMinimalist, setAlwaysMinimalist } = useViewMode(); 
 
   const fetchTrajectories = useCallback(async () => {
     try {
@@ -71,7 +70,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
       let newMarkerWidth;
       let newMarkerHeight;
 
-      if (zoomLevel < SIMPLIFIED_VIEW_ZOOM_THRESHOLD) {
+      if (alwaysMinimalist || zoomLevel < SIMPLIFIED_VIEW_ZOOM_THRESHOLD) {
         newMarkerWidth = SIMPLIFIED_ARROW_SIZE;
         newMarkerHeight = SIMPLIFIED_ARROW_SIZE;
       } else {
@@ -92,18 +91,19 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
         },
       };
     });
-  }, []);
+  }, [alwaysMinimalist]);
+
 
   useEffect(() => {
     setEdges(prevEdges => adjustMarkersForZoom(prevEdges, currentZoom));
-  }, [currentZoom, setEdges, adjustMarkersForZoom]);
+  }, [currentZoom, setEdges, adjustMarkersForZoom, alwaysMinimalist]);
 
   const onConnect = useCallback((params) => {
     const linkType = prompt("Type de lien (produit, engendre, influe sur, mène à, motive, contextualise, permet, facilite, débouche sur, se concrétise par, précède, aboutit à, est suivi de, résulte en, provoque, dans un contexte de, vise à, démontre):", "est lié à");
     if (linkType) {
       let initialMarkerWidth;
       let initialMarkerHeight;
-      if (currentZoom < SIMPLIFIED_VIEW_ZOOM_THRESHOLD) {
+      if (alwaysMinimalist || currentZoom < SIMPLIFIED_VIEW_ZOOM_THRESHOLD) {
         initialMarkerWidth = SIMPLIFIED_ARROW_SIZE;
         initialMarkerHeight = SIMPLIFIED_ARROW_SIZE;
       } else {
@@ -129,7 +129,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
       };
       setEdges((eds) => addEdge(newEdge, eds));
     }
-  }, [setEdges, currentZoom]);
+  }, [setEdges, currentZoom, alwaysMinimalist]);
 
   const addNode = useCallback((type, parentId = null) => {
     const label = prompt(`Entrez le nom/texte pour ce nouveau ${type}:`, `Nouveau ${type}`);
@@ -366,7 +366,13 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
           Sauvegarder
         </button>
         <button onClick={handleAutoLayout}>Auto-Layout</button>
-        <div className="view-mode-toggle"> {/* <<<< NOUVEAU */}
+                <button 
+          onClick={() => setAlwaysMinimalist(prev => !prev)}
+          style={{ backgroundColor: alwaysMinimalist ? '#a5d6a7' : '#eceff1' }} // Style optionnel pour indiquer l'état
+        >
+          {alwaysMinimalist ? "Désactiver" : "Activer"} Toujours Minimaliste
+        </button>
+        <div className="view-mode-toggle">
           <span>Mode d'affichage: </span>
           <button onClick={() => setViewMode('temporal')} disabled={viewMode === 'temporal'}>Temporel</button>
           <button onClick={() => setViewMode('lifePlans')} disabled={viewMode === 'lifePlans'}>Plans de Vie</button>
@@ -463,7 +469,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
 export default function AppWrapper() { // Enveloppe avec le Provider
   return (
     <ReactFlowProvider>
-      <ViewModeProvider> {/* <<<< NOUVEAU */}
+      <ViewModeProvider>
         <TrajectoryAppContent />
       </ViewModeProvider>
     </ReactFlowProvider>

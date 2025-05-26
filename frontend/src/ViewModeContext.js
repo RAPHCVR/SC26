@@ -7,9 +7,10 @@ export const useViewMode = () => useContext(ViewModeContext);
 
 export const ViewModeProvider = ({ children }) => {
   const [viewMode, setViewMode] = useState('temporal'); // 'temporal' or 'lifePlans'
+  const [alwaysMinimalist, setAlwaysMinimalist] = useState(false);
 
   return (
-    <ViewModeContext.Provider value={{ viewMode, setViewMode }}>
+    <ViewModeContext.Provider value={{ viewMode, setViewMode, alwaysMinimalist, setAlwaysMinimalist }}>
       {children}
     </ViewModeContext.Provider>
   );

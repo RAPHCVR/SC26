@@ -22,7 +22,7 @@ const useNodeChildBounds = (nodeId) => {
 
 const PeriodNodeComponent = ({ id, data, selected }) => {
   const currentZoom = useStore((store) => store.transform[2]);
-  const { viewMode } = useViewMode();
+  const { viewMode, alwaysMinimalist } = useViewMode();
   const zoomThreshold = 0.3; // SIMPLIFIED_VIEW_ZOOM_THRESHOLD
   const childBounds = useNodeChildBounds(id);
   const [size, setSize] = useState({ width: 350, height: 250 });
@@ -41,11 +41,11 @@ const PeriodNodeComponent = ({ id, data, selected }) => {
   }, [childBounds?.width, childBounds?.height]);
 
   let containerClasses = `custom-node period-node ${selected ? 'selected' : ''}`;
-  if (viewMode === 'lifePlans') {
+  if (viewMode === 'lifePlans' && !alwaysMinimalist) {
     containerClasses += ' dim-parent-in-plan-view';
   }
 
-  if (currentZoom < zoomThreshold) {
+  if (alwaysMinimalist || currentZoom < zoomThreshold) {
     return (
       <div
         className={`${containerClasses} simplified-node`} // simplified-node est utilisé par Period et Event
@@ -67,7 +67,7 @@ const PeriodNodeComponent = ({ id, data, selected }) => {
 
 const EventNodeComponent = ({ id, data, selected }) => {
   const currentZoom = useStore((store) => store.transform[2]);
-  const { viewMode } = useViewMode();
+  const { viewMode, alwaysMinimalist } = useViewMode();
   const zoomThreshold = 0.3; // SIMPLIFIED_VIEW_ZOOM_THRESHOLD
   const childBounds = useNodeChildBounds(id);
   const [size, setSize] = useState({ width: 300, height: 200 });
@@ -86,11 +86,11 @@ const EventNodeComponent = ({ id, data, selected }) => {
   }, [childBounds?.width, childBounds?.height]);
 
   let containerClasses = `custom-node event-node ${selected ? 'selected' : ''}`;
-  if (viewMode === 'lifePlans') {
+  if (viewMode === 'lifePlans' && !alwaysMinimalist) {
     containerClasses += ' dim-parent-in-plan-view';
   }
 
-  if (currentZoom < zoomThreshold) {
+  if (alwaysMinimalist || currentZoom < zoomThreshold) {
     return (
       <div
         className={`${containerClasses} simplified-node`} // simplified-node est utilisé par Period et Event
@@ -112,7 +112,7 @@ const EventNodeComponent = ({ id, data, selected }) => {
 
 const ElementNodeComponent = ({ id, data, selected }) => {
   const currentZoom = useStore((store) => store.transform[2]);
-  const { viewMode } = useViewMode();
+  const { viewMode, alwaysMinimalist } = useViewMode();
   const zoomThreshold = 0.3; // SIMPLIFIED_VIEW_ZOOM_THRESHOLD
   const elementType = data.elementType || 'Élément';
 
@@ -127,7 +127,7 @@ const ElementNodeComponent = ({ id, data, selected }) => {
     }
   }
 
-  if (currentZoom < zoomThreshold) {
+  if (alwaysMinimalist || currentZoom < zoomThreshold) {
     let shapeSpecificClass = '';
     let shapeContent = null; // For Unicode symbols like stars
 
