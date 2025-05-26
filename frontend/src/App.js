@@ -1,3 +1,4 @@
+// frontend/src/App.js
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactFlow, {
   MiniMap,
@@ -10,7 +11,8 @@ import ReactFlow, {
   useReactFlow,
   ReactFlowProvider,
   getRectOfNodes,
-  getTransformForBounds
+  getTransformForBounds,
+  useStore // <<<< IMPORTÉ
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import axios from 'axios';
@@ -29,6 +31,14 @@ const nodeTypes = {
 
 const API_URL = 'http://localhost:5001/api/trajectories';
 
+// --- Constantes pour le redimensionnement des flèches ---
+const SIMPLIFIED_VIEW_ZOOM_THRESHOLD = 0.3; // Seuil de zoom pour la vue simplifiée (idem CustomNodes)
+const BASE_ARROW_SIZE = 20; // Taille de base des flèches au zoom 1
+const MIN_ARROW_SCALE = 0.4; // Facteur d'échelle min (la flèche ne devient pas plus petite que BASE_ARROW_SIZE * MIN_ARROW_SCALE)
+const MAX_ARROW_SCALE = 1.5; // Facteur d'échelle max (la flèche ne devient pas plus grosse que BASE_ARROW_SIZE * MAX_ARROW_SCALE)
+const SIMPLIFIED_ARROW_SIZE = 7; // Taille fixe des flèches en vue simplifiée (assez petite mais visible)
+// ---
+
 function TrajectoryApp() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -40,6 +50,7 @@ function TrajectoryApp() {
   const [newTrajectoryName, setNewTrajectoryName] = useState('');
 
   const reactFlowWrapper = useRef(null);
+  const currentZoom = useStore((store) => store.transform[2]); // Hook pour obtenir le niveau de zoom actuel
 
   const fetchTrajectories = useCallback(async () => {
     try {
@@ -54,15 +65,70 @@ function TrajectoryApp() {
     fetchTrajectories();
   }, [fetchTrajectories]);
 
+  // Fonction pour ajuster la taille des marqueurs de flèches en fonction du zoom
+  const adjustMarkersForZoom = useCallback((edgesToAdjust, zoomLevel) => {
+    if (!edgesToAdjust) return [];
+    return edgesToAdjust.map(edge => {
+      let newMarkerWidth;
+      let newMarkerHeight;
+
+      if (zoomLevel < SIMPLIFIED_VIEW_ZOOM_THRESHOLD) {
+        newMarkerWidth = SIMPLIFIED_ARROW_SIZE;
+        newMarkerHeight = SIMPLIFIED_ARROW_SIZE;
+      } else {
+        // Grossit quand on dézoome (zoomLevel < 1), rétrécit quand on zoome (zoomLevel > 1)
+        const scale = 1 / zoomLevel;
+        const scaledSize = BASE_ARROW_SIZE * scale;
+
+        newMarkerWidth = Math.max(
+          BASE_ARROW_SIZE * MIN_ARROW_SCALE, // Taille minimale
+          Math.min(scaledSize, BASE_ARROW_SIZE * MAX_ARROW_SCALE) // Taille maximale
+        );
+        newMarkerHeight = newMarkerWidth; // Maintenir le ratio carré pour arrowclosed
+      }
+      return {
+        ...edge,
+        markerEnd: {
+          ...(edge.markerEnd || { type: 'arrowclosed' }), // Conserver le type de marqueur existant ou par défaut
+          width: newMarkerWidth,
+          height: newMarkerHeight,
+        },
+      };
+    });
+  }, []); // Cette fonction ne dépend que des constantes définies hors de son scope
+
+  // Effet pour mettre à jour les marqueurs lorsque le zoom change
+  useEffect(() => {
+    setEdges(prevEdges => adjustMarkersForZoom(prevEdges, currentZoom));
+  }, [currentZoom, setEdges, adjustMarkersForZoom]);
+
+
   const onConnect = useCallback((params) => {
     const linkType = prompt("Type de lien (produit, engendre, influe sur, mène à):", "est lié à");
     if (linkType) {
+      // Calculer la taille initiale du marqueur en fonction du zoom actuel pour la nouvelle arête
+      let initialMarkerWidth;
+      let initialMarkerHeight;
+
+      if (currentZoom < SIMPLIFIED_VIEW_ZOOM_THRESHOLD) {
+        initialMarkerWidth = SIMPLIFIED_ARROW_SIZE;
+        initialMarkerHeight = SIMPLIFIED_ARROW_SIZE;
+      } else {
+        const scale = 1 / currentZoom;
+        const scaledSize = BASE_ARROW_SIZE * scale;
+        initialMarkerWidth = Math.max(
+            BASE_ARROW_SIZE * MIN_ARROW_SCALE,
+            Math.min(scaledSize, BASE_ARROW_SIZE * MAX_ARROW_SCALE)
+        );
+        initialMarkerHeight = initialMarkerWidth;
+      }
+
       const newEdge = {
         ...params,
         id: uuidv4(),
         type: 'smoothstep',
         label: linkType,
-        markerEnd: { type: 'arrowclosed', width: 20, height: 20 },
+        markerEnd: { type: 'arrowclosed', width: initialMarkerWidth, height: initialMarkerHeight },
         style: { strokeWidth: 2.5, stroke: '#546e7a' },
         labelStyle: { fill: '#333', fontWeight: 500, fontSize: 11 },
         labelBgPadding: [4, 2],
@@ -71,7 +137,8 @@ function TrajectoryApp() {
       };
       setEdges((eds) => addEdge(newEdge, eds));
     }
-  }, [setEdges]);
+  }, [setEdges, currentZoom]); // currentZoom est nécessaire pour la taille initiale de la flèche
+
 
   const addNode = useCallback((type, parentId = null) => {
     const label = prompt(`Entrez le nom/texte pour ce nouveau ${type}:`, `Nouveau ${type}`);
@@ -87,26 +154,24 @@ function TrajectoryApp() {
 
     if (parentNode) {
       const childNodes = getNodes().filter(n => n.parentNode === parentId);
-      position = { x: 20, y: (childNodes.length * 80) + 40 }; // Simple positioning within parent
+      position = { x: 20, y: (childNodes.length * 80) + 40 }; 
 
       setTimeout(() => {
         const nodesToFit = [
             parentNode, 
             ...childNodes, 
-            // Include a representation of the new node for accurate bounds calculation
             { 
                 id, 
                 position, 
-                width: DEFAULT_NODE_WIDTH, // Use default or estimated size
+                width: DEFAULT_NODE_WIDTH, 
                 height: DEFAULT_NODE_HEIGHT,
-                parentNode: parentId // Important for getRectOfNodes with parent nodes
+                parentNode: parentId 
             }
         ];
-        // Ensure parentNode has width and height for getTransformForBounds
-        const parentWidth = parentNode.width || 500; // Fallback if not set
-        const parentHeight = parentNode.height || 300; // Fallback if not set
+        const parentWidth = parentNode.width || 500; 
+        const parentHeight = parentNode.height || 300;
 
-        const rect = getRectOfNodes(nodesToFit.map(n => getNode(n.id) || n)); // Use actual node if available
+        const rect = getRectOfNodes(nodesToFit.map(n => getNode(n.id) || n)); 
         const transform = getTransformForBounds(rect, parentWidth, parentHeight, 0.1, 2);
         setViewport({ x: transform[0], y: transform[1], zoom: transform[2] }, { duration: 300 });
       }, 100);
@@ -128,7 +193,7 @@ function TrajectoryApp() {
         if (!parentId) { alert("Sélectionnez une Période."); return; }
         newNode = { id, type: 'event', position, parentNode: parentId, extent: 'parent', data: { label } };
         break;
-      default: // Fait, Contexte, Vécu, Action, Encapacitation
+      default: 
         if (!parentId) { alert("Sélectionnez un Événement."); return; }
         newNode = { id, type: 'element', position, parentNode: parentId, extent: 'parent', data: { label, elementType: type, id } };
         break;
@@ -165,7 +230,7 @@ function TrajectoryApp() {
       setCurrentTrajectoryId(id);
       setCurrentTrajectoryName(subjectName);
       setNodes([]);
-      setEdges([]);
+      setEdges(adjustMarkersForZoom([], currentZoom)); // Initialiser avec des arêtes vides ajustées
       setNewTrajectoryName('');
     } catch (error) { console.error("Erreur création:", error); alert("Échec création."); }
   };
@@ -175,9 +240,11 @@ function TrajectoryApp() {
       const response = await axios.get(`${API_URL}/${trajectoryIdToLoad}`);
       const trajectoryData = response.data;
       setNodes(trajectoryData.nodes || []);
-      setEdges(trajectoryData.edges || []);
+      // Ajuster les marqueurs des arêtes chargées avec le zoom actuel
+      setEdges(adjustMarkersForZoom(trajectoryData.edges || [], currentZoom));
       setCurrentTrajectoryId(trajectoryIdToLoad);
       setCurrentTrajectoryName(trajectoryData.subjectName);
+      setTimeout(() => fitView({ padding: 0.1, duration: 300 }), 100);
     } catch (error) { console.error("Erreur chargement:", error); alert("Échec chargement."); }
   };
 
@@ -185,23 +252,35 @@ function TrajectoryApp() {
     if (!currentTrajectoryId) { alert("Aucune trajectoire chargée."); return; }
     try {
       const cleanNodes = nodes.map(({ selected, dragging, positionAbsolute, ...rest }) => ({...rest, data: {...rest.data}}));
-      const cleanEdges = edges.map(({ selected, ...rest }) => rest); // Edges usually don't have problematic extra data like nodes
+      
+      // Réinitialiser la taille des marqueurs à la taille de base avant la sauvegarde
+      const edgesToSave = edges.map(edge => {
+        // eslint-disable-next-line no-unused-vars
+        const { selected, ...restOfEdge } = edge; // Enlever 'selected'
+        return {
+          ...restOfEdge,
+          markerEnd: {
+            ...(edge.markerEnd || { type: 'arrowclosed' }),
+            width: BASE_ARROW_SIZE, // Remettre la taille de base
+            height: BASE_ARROW_SIZE, // Remettre la taille de base
+          }
+        };
+      });
 
       const payload = {
         subjectName: currentTrajectoryName,
         nodes: cleanNodes,
-        edges: cleanEdges,
+        edges: edgesToSave,
       };
       await axios.put(`${API_URL}/${currentTrajectoryId}`, payload);
       alert(`Trajectoire "${currentTrajectoryName}" sauvegardée !`);
-      fetchTrajectories(); // Refresh list in case name was changed on backend (though not implemented here)
+      fetchTrajectories(); 
     } catch (error) { console.error("Erreur sauvegarde:", error); alert("Échec sauvegarde."); }
   };
 
   const handleAutoLayout = useCallback(() => {
     setNodes((nds) => {
-      const updatedNodes = autoLayout(nds, getNodes); // Pass getNodes if layout needs current state
-      // Fit view after layout applied and nodes potentially re-rendered
+      const updatedNodes = autoLayout(nds, getNodes); 
       setTimeout(() => {
         fitView({ padding: 0.2, duration: 300 });
       }, 0);
@@ -212,13 +291,12 @@ function TrajectoryApp() {
   const onNodesDelete = useCallback(
     (deletedNodes) => {
       const allNodeIdsToDelete = new Set(deletedNodes.map(n => n.id));
-      const currentGraphNodes = getNodes(); // Use the most up-to-date nodes from the store
+      const currentGraphNodes = getNodes(); 
 
       function findChildrenRecursive(parentId) {
         currentGraphNodes.forEach(n => {
           if (n.parentNode === parentId) {
             allNodeIdsToDelete.add(n.id);
-            // If the child is also a container, recurse
             if (n.type === 'period' || n.type === 'event') {
               findChildrenRecursive(n.id);
             }
@@ -235,8 +313,6 @@ function TrajectoryApp() {
       setEdges((eds) => eds.filter(edge => 
         !allNodeIdsToDelete.has(edge.source) && !allNodeIdsToDelete.has(edge.target)
       ));
-      // Node deletion itself is handled by React Flow's internal onNodesChange
-      // if we don't completely override its behavior.
     },
     [getNodes, setEdges] 
   );
@@ -244,7 +320,7 @@ function TrajectoryApp() {
   const getSelectedNode = () => nodes.find(n => n.selected);
 
   const loadPrecreatedInesMadani = async () => {
-    const { nodes: precreatedNodes, edges: precreatedEdges } = inesMadaniPrecreatedData();
+    const { nodes: precreatedNodesData, edges: precreatedEdgesData } = inesMadaniPrecreatedData();
     const precreatedTrajectoryId = 'ines-madani-precreated';
     const precreatedTrajectoryName = "Inès Madani (Prédéfinie)";
 
@@ -255,26 +331,41 @@ function TrajectoryApp() {
 
     setCurrentTrajectoryId(precreatedTrajectoryId);
     setCurrentTrajectoryName(precreatedTrajectoryName);
-    setNodes(precreatedNodes);
-    setEdges(precreatedEdges);
-    // Fit view after loading these extensive nodes
+    
+    // Ajuster les marqueurs des arêtes prédéfinies avec le zoom actuel
+    const adjustedPrecreatedEdges = adjustMarkersForZoom(precreatedEdgesData, currentZoom);
+    
+    setNodes(precreatedNodesData);
+    setEdges(adjustedPrecreatedEdges);
+    
     setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 100);
 
+    // Pour la sauvegarde, utiliser les données originales avec la taille de base des flèches
+    const edgesToSaveForPrecreated = precreatedEdgesData.map(edge => {
+        // eslint-disable-next-line no-unused-vars
+        const { selected, ...restOfEdge } = edge;
+        return {
+          ...restOfEdge,
+          markerEnd: {
+            ...(edge.markerEnd || { type: 'arrowclosed' }),
+            width: BASE_ARROW_SIZE, 
+            height: BASE_ARROW_SIZE,
+          }
+        };
+      });
 
     const payload = {
       subjectName: precreatedTrajectoryName,
-      nodes: precreatedNodes.map(({ selected, dragging, positionAbsolute, ...rest }) => ({...rest, data: {...rest.data}})),
-      edges: precreatedEdges.map(({ selected, ...rest }) => rest),
+      nodes: precreatedNodesData.map(({ selected, dragging, positionAbsolute, ...rest }) => ({...rest, data: {...rest.data}})),
+      edges: edgesToSaveForPrecreated,
     };
 
     try {
-        // Try to update it if it exists (e.g., user loaded, modified, then re-clicked "load predefined")
         await axios.put(`${API_URL}/${precreatedTrajectoryId}`, payload);
     } catch (err) {
-        // If it doesn't exist (404), create it.
         if (err.response && err.response.status === 404) {
             try {
-                await axios.post(API_URL, { id: precreatedTrajectoryId, ...payload }); // Backend should handle 'id' if provided
+                await axios.post(API_URL, { id: precreatedTrajectoryId, ...payload }); 
             } catch (creationError) {
                 console.error("Error auto-creating precreated trajectory:", creationError);
             }
@@ -282,7 +373,7 @@ function TrajectoryApp() {
             console.error("Error auto-saving precreated trajectory (PUT failed):", err);
         }
     } finally {
-        fetchTrajectories(); // Refresh the list from backend
+        fetchTrajectories(); 
         alert(`Trajectoire prédéfinie "${precreatedTrajectoryName}" chargée et synchronisée.`);
     }
   };
@@ -290,10 +381,9 @@ function TrajectoryApp() {
   const handleNodeSelectFromTreeView = useCallback((nodeId) => {
     const node = getNode(nodeId);
     if (node) {
-      // Option 2: Fit view to the node (plus robuste si le noeud est un parent)
       const nodeToFit = {
         ...node,
-        width: node.width || 150, // Provide default if not set
+        width: node.width || 150, 
         height: node.height || 50,
       };
       const bounds = getRectOfNodes([nodeToFit]);
@@ -306,7 +396,7 @@ function TrajectoryApp() {
         }))
       );
     }
-  }, [getNode, setCenter, fitBounds, setNodes, getRectOfNodes]); // getRectOfNodes est déjà importé
+  }, [getNode, fitBounds, setNodes, getRectOfNodes]); // setCenter enlevé car fitBounds est plus complet
 
   return (
     <div className="app-container">
