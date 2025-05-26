@@ -1,21 +1,18 @@
+/* frontend/src/style.css */
+
+/* --- GLOBAL & LAYOUT --- */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  background-color: #eef1f5; /* Softer grey */
+  background-color: #eef1f5;
   color: #333;
-  overflow: hidden; /* Prevent body scroll */
+  overflow: hidden; /* Prevents scrollbars on body if content fits viewport */
 }
 
-#root {
+#root, .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-}
-
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
 }
 
 .main-controls-bar {
@@ -26,28 +23,27 @@ body {
   display: flex;
   gap: 15px;
   align-items: center;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
 }
 
-.main-controls-bar input[type="text"],
-.main-controls-bar button {
+.main-controls-bar input[type="text"] {
+  min-width: 200px;
   padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid #b0bec5;
   font-size: 0.9em;
 }
 
-.main-controls-bar input[type="text"] {
-  min-width: 200px;
-}
-
 .main-controls-bar button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #b0bec5;
+  font-size: 0.9em;
   cursor: pointer;
-  background-color: #eceff1; 
+  background-color: #eceff1;
   color: #37474f;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
-
 .main-controls-bar button:hover {
   background-color: #cfd8dc;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -65,14 +61,12 @@ body {
   font-size: 0.85em;
   color: #546e7a;
 }
-.status-bar strong {
-  color: #1e88e5; 
-}
+.status-bar strong { color: #1e88e5; }
 
 .content-area {
   display: flex;
   flex-grow: 1;
-  overflow: hidden; 
+  overflow: hidden; /* Contains child scrolling */
 }
 
 .sidebar {
@@ -100,7 +94,6 @@ body {
   padding: 0;
   margin: 0;
 }
-
 .trajectory-list li {
   padding: 6px 0;
   display: flex;
@@ -109,39 +102,38 @@ body {
   font-size: 0.9em;
   border-bottom: 1px dashed #e0e0e0;
 }
-.trajectory-list li:last-child {
-  border-bottom: none;
-}
+.trajectory-list li:last-child { border-bottom: none; }
 
 .trajectory-list li button {
   padding: 5px 8px;
   font-size: 0.8em;
   margin-left: 8px;
-  background-color: #e3f2fd; 
+  background-color: #e3f2fd;
   border: 1px solid #90caf9;
   color: #1976d2;
 }
-.trajectory-list li button:hover {
-  background-color: #bbdefb;
-}
+.trajectory-list li button:hover { background-color: #bbdefb; }
 
 .reactflow-wrapper {
   flex-grow: 1;
-  height: 100%; 
-  position: relative; 
+  height: 100%; /* Ensure it takes full height of its flex parent */
+  position: relative;
 }
 
-/* Custom Node Styles */
-.custom-node { 
+/* --- REACTFLOW & NODE STYLES --- */
+.custom-node {
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  padding: 12px; 
+  padding: 12px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  border: 1px solid transparent; 
+  border: 1px solid transparent; /* Base border, color overridden by type */
+  position: relative;
+  box-sizing: border-box;
 }
 .custom-node.selected {
-  border-color: #673ab7; 
-  box-shadow: 0 0 0 2px #673ab7, 0 4px 8px rgba(0,0,0,0.2);
+  border-color: #673ab7 !important; /* Stronger selection indication */
+  box-shadow: 0 0 0 2px #673ab7, 0 4px 12px rgba(0,0,0,0.25) !important;
+  z-index: 5 !important; /* Ensure selected nodes are on top of other nodes/edges */
 }
 .custom-node-label {
   font-weight: bold;
@@ -149,237 +141,248 @@ body {
   padding-bottom: 5px;
   border-bottom: 1px solid rgba(0,0,0,0.1);
   display: block;
-  color: #263238; 
+  color: #263238;
 }
 
-.period-node {
-  background: #e3f2fd; 
-  border: 1px solid #90caf9;
-  /* min-width and min-height are effectively set by NodeResizer and initial state in component */
-  text-align: center;
-}
-.period-node .custom-node-label {
-  color: #1565c0; 
-}
+/* Node Types: Period & Event */
+.period-node { background: #e3f2fd; border-color: #90caf9; text-align: center; }
+.period-node .custom-node-label { color: #1565c0; }
 
-.event-node {
-  background: #e8f5e9; 
-  border: 1px solid #a5d6a7;
-  text-align: center;
-}
-.event-node .custom-node-label {
-  color: #2e7d32; 
-}
+.event-node { background: #e8f5e9; border-color: #a5d6a7; text-align: center; }
+.event-node .custom-node-label { color: #2e7d32; }
 
+/* Element Node (Base for Fait, Contexte, etc.) */
 .element-node {
-  padding: 10px; 
-  /* min-width from NodeResizer */
+  padding: 10px;
   text-align: left;
   font-size: 0.85em;
-  position: relative; /* For Handles */
 }
-.element-node .custom-node-label {
-  font-size: 0.9em; 
-  margin-bottom: 5px;
-}
-.element-node-text {
-  font-size: 0.95em;
-  color: #455a64;
-  word-break: break-word; /* Allow long text to wrap */
-}
+.element-node .custom-node-label { font-size: 0.9em; margin-bottom: 5px; }
+.element-node-text { font-size: 0.95em; color: #455a64; word-break: break-word; }
 
-/* Element types specific styling */
-.element-node.Fait { background: #ffcdd2; border: 1px solid #c62828; }
+/* Element Node Types - Colors & Borders */
+.element-node.Fait { background: #ffcdd2; border-color: #c62828; }
 .element-node.Fait .custom-node-label { color: #b71c1c; }
 
-.element-node.Contexte { background: #e1bee7; border: 1px solid #6a1b9a; }
+.element-node.Contexte { background: #e1bee7; border-color: #6a1b9a; }
 .element-node.Contexte .custom-node-label { color: #4a148c; }
 
-.element-node.Vécu { background: #c8e6c9; border: 1px solid #388e3c; } /* Corrected class name */
+.element-node.Vécu { background: #c8e6c9; border-color: #388e3c; }
 .element-node.Vécu .custom-node-label { color: #1b5e20; }
 
-.element-node.Action { background: #fff9c4; border: 1px solid #f9a825; }
+.element-node.Action { background: #fff9c4; border-color: #f9a825; }
 .element-node.Action .custom-node-label { color: #f57f17; }
 
-.element-node.Encapacitation { background: #ffe0b2; border: 1px solid #ef6c00; }
-.element-node.Encapacitation .custom-node-label { color: #e65100; }
+.element-node.Encapacitation { background: #fce4ec; border-color: #f06292; }
+.element-node.Encapacitation .custom-node-label { color: #d81b60; }
 
 /* React Flow Handles */
 .react-flow__handle {
   width: 10px;
   height: 10px;
-  background: #78909c !important; 
+  background: #78909c !important; /* Override default React Flow handle style */
   border: 1px solid #546e7a !important;
   border-radius: 50%;
 }
-.react-flow__handle-right { right: -6px; } /* Adjust position to be on the edge */
-.react-flow__handle-left { left: -6px; }  /* Adjust position to be on the edge */
+.react-flow__handle-right { right: -6px; }
+.react-flow__handle-left { left: -6px; }
 
-/* Edge label styles */
+/* Edge Styles */
 .react-flow__edge-text {
   fill: #333;
   font-size: 11px;
   font-weight: 500;
 }
 
-/* 
-  Z-index stacking order:
-  Ensures edges and their labels render above nodes.
-  Also ensures child nodes (elements) render above their parent containers (events),
-  and events render above periods. This is important for visual clarity when nodes overlap.
-*/
-.reactflow-wrapper .react-flow__edges {
-  z-index: 10 !important; 
-}
+/* Z-index for React Flow Elements - Ensuring proper stacking */
+.reactflow-wrapper .react-flow__edges { z-index: 10 !important; }
 .reactflow-wrapper .react-flow__edge path,
-.reactflow-wrapper .react-flow__edge .react-flow__edge-text { /* Target text specifically too */
-  z-index: 11 !important; /* Edge text might need its own z-index or inherit from path */
-}
-
+.reactflow-wrapper .react-flow__edge .react-flow__edge-text { z-index: 11 !important; } /* Edges above nodes */
 .react-flow__node.period-node { z-index: 1; }
-.react-flow__node.event-node { z-index: 2; } /* Higher than period */
-.react-flow__node.element-node { z-index: 3; } /* Higher than event */
-
-/* Ensure ReactFlow attribution is visible if needed and not covered */
+.react-flow__node.event-node { z-index: 2; }
+.react-flow__node.element-node { z-index: 3; }
+/* Selected nodes get z-index: 5 !important (defined above) */
+/* Highlighted plan elements get z-index: 4 !important (defined below) */
 .react-flow__attribution {
-    z-index: 12 !important; /* Above edges if they might overlap */
-    background: rgba(255,255,255,0.7) !important; /* Make it more readable */
+    z-index: 12 !important; /* Attribution on top of everything */
+    background: rgba(255,255,255,0.8) !important;
     padding: 2px 4px !important;
     border-radius: 3px !important;
 }
 
-/* Simplified Node Styles */
-.simplified-node {
-  padding: 5px;
-  border: 1px dashed #ccc;
-  background-color: #f0f0f0;
+/* --- SIMPLIFIED NODE STYLES (DEZOOMED VIEW) --- */
+
+/* Simplified Period & Event Nodes (containers) */
+.custom-node.simplified-node {
+  padding: 5px !important;
+  border-style: dashed !important;
+  border-color: #ccc !important;
   text-align: center;
-  font-size: 10px; /* Plus petit pour la vue simplifiée */
+  font-size: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  box-shadow: none !important;
+}
+.custom-node.simplified-node .custom-node-label {
+  font-weight: normal;
+  font-size: 9px;
+  border-bottom: none;
+  display: block; /* Ensure it takes width for text-overflow */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.period-node.simplified-node { background-color: #f0f4f8; } /* Lighter blue */
+.event-node.simplified-node { background-color: #f1f8e9; } /* Lighter green */
+
+
+/* Base for Simplified Element Nodes (children) */
+.simplified-element-base {
+  display: flex !important; /* Force flex for centering content */
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important; /* No internal padding for shape purity */
+  box-shadow: none !important;
+  border-width: 1px !important;
+  overflow: hidden;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, border-color 0.15s ease-out, background-color 0.15s ease-out;
 }
 
-/* TreeView Styles */
+/* Shapes for Simplified Element Nodes */
+.simplified-element-base.shape-circle { border-radius: 50% !important; } /* Vécu */
+.simplified-element-base.shape-square { border-radius: 3px !important; } /* Fait */
+.simplified-element-base.shape-diamond { /* Contexte */
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  border-radius: 0 !important; /* Clip-path shapes don't need border-radius */
+}
+.simplified-element-base.shape-triangle { /* Action */
+  clip-path: polygon(50% 5%, 0% 95%, 100% 95%);
+  border-radius: 0 !important;
+}
+.simplified-element-base.shape-star { /* Encapacitation */
+  border-radius: 50% !important; /* Star symbol inside a circle container */
+}
+.simplified-element-base.shape-star .shape-symbol {
+  font-size: 20px; /* Adjust size of star character */
+  color: #d81b60; /* Encapacitation label color */
+  line-height: 1;
+  display: block;
+}
+
+/* Handles for Simplified Element Nodes */
+.simplified-element-base .react-flow__handle {
+  width: 5px !important;
+  height: 5px !important;
+  /* z-index is often set inline by React Flow for handles, or can be higher if needed */
+}
+
+/* --- VIEW MODE STYLES (Temporal vs Life Plans) --- */
+
+/* General Highlight & Dim for "Life Plans" Mode */
+.highlight-plan-element { /* Applied to Action & Encapacitation */
+  opacity: 1 !important; /* Ensure full opacity */
+  transform: scale(1.02); /* Base scale for normal view, overridden for simplified */
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out, border-color 0.2s ease-out, background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  z-index: 4 !important; /* Above other elements but below selected */
+}
+.dim-plan-element { /* Applied to Fait, Contexte, Vécu */
+  opacity: 0.5 !important;
+  transition: opacity 0.2s ease-out;
+}
+.dim-parent-in-plan-view { /* Applied to Period & Event containers in plan view */
+  opacity: 0.65;
+}
+
+/* NORMAL ZOOM - Life Plans Highlight Specifics */
+.element-node.Action.highlight-plan-element {
+    background-color: #ffeb3b !important;
+    border-color: #e65100 !important;
+    border-width: 3px !important;
+    box-shadow: inset 0 0 6px rgba(230, 81, 0, 0.7), 0 0 8px rgba(230, 81, 0, 0.5) !important;
+    transform: scale(1.04) !important;
+}
+.element-node.Encapacitation.highlight-plan-element {
+    background-color: #f8bbd0 !important;
+    border-color: #c2185b !important;
+    border-width: 3px !important;
+    box-shadow: inset 0 0 6px rgba(194, 24, 91, 0.6), 0 0 8px rgba(194, 24, 91, 0.4) !important;
+    transform: scale(1.03) !important;
+}
+
+/* SIMPLIFIED ZOOM - Life Plans Highlight Specifics */
+.simplified-element-base.highlight-plan-element {
+  transform: scale(1.15) !important; /* More pop for small elements */
+  border-width: 2px !important; /* Default border for simplified highlight */
+}
+
+/* Simplified ACTION (TRIANGLE) Highlight - Remains a triangle */
+.simplified-element-base.Action.shape-triangle.highlight-plan-element {
+  clip-path: polygon(50% 5%, 0% 95%, 100% 95%) !important; /* Ensure triangle shape */
+  border-radius: 0 !important; /* No border-radius for clip-path shapes */
+  background-color: #e65100 !important; /* Solid, bright orange background */
+  border-color: #ff9800 !important; /* Contrasting lighter orange border */
+  border-width: 3px !important; /* Thicker border for highlight */
+}
+/* Optional: Symbol inside highlighted simplified Action triangle
+.simplified-element-base.Action.shape-triangle.highlight-plan-element::before {
+  content: "▶";
+  color: white;
+  font-size: 12px; font-weight: bold;
+} */
+
+.simplified-element-base.Encapacitation.shape-star.highlight-plan-element {
+  background-color: #d81b60 !important; /* Solid background for star container */
+  border-color: #ff80ab !important;
+  border-width: 3px !important;
+}
+.simplified-element-base.Encapacitation.shape-star.highlight-plan-element .shape-symbol {
+  color: white !important; /* Star symbol contrast on solid background */
+  transform: scale(1.1);
+}
+
+/* Dimming for simplified elements (if not highlighted in plan view) */
+.simplified-element-base.dim-plan-element { opacity: 0.4 !important; }
+.custom-node.simplified-node.dim-parent-in-plan-view { opacity: 0.5 !important; }
+
+
+/* --- TREEVIEW & MISC --- */
 .tree-view-container {
   margin-top: 20px;
   padding-top: 10px;
   border-top: 1px solid #eceff1;
 }
-
 .tree-view-container h3 {
   margin-top: 0;
   margin-bottom: 10px;
-  font-size: 1em; /* Ajusté pour être similaire aux autres h3 de la sidebar */
+  font-size: 1em;
   color: #37474f;
 }
-
-.tree-view-container ul {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
-}
-
+.tree-view-container ul { list-style: none; padding-left: 0; margin: 0; }
 .tree-view-container li {
   padding: 4px 0;
   font-size: 0.9em;
-  cursor: pointer; /* Déjà dans le style en ligne, mais bon à avoir ici */
+  cursor: pointer;
   border-radius: 4px;
-}
-
-.tree-view-container li:hover {
-  background-color: #f0f4f8;
-}
-
-/* Pour l'indentation, le style en ligne est utilisé, mais on peut le standardiser ici si besoin */
-.tree-view-container ul ul li { /* Enfants plus imbriqués */
-  /* padding-left: 20px; /* Contrôlé par le style en ligne 'level' */
-}
-
-/* Styles for Handles in simplified nodes, if not overridden by inline styles */
-.simplified-node .react-flow__handle {
-  width: 6px !important;
-  height: 6px !important;
-  min-width: 6px !important; /* ensure override if other styles try to set min-width */
-  min-height: 6px !important; /* ensure override if other styles try to set min-height */
-}
-.simplified-node .react-flow__handle-left { 
-  left: -4px !important; 
-}
-.simplified-node .react-flow__handle-right { 
-  right: -4px !important; 
-}
-
-.simplified-node .custom-node-label {
-  font-weight: normal; /* Plus léger que le label normal */
-  font-size: 9px;
-  border-bottom: none; /* Pas de bordure pour la simplicité */
-  display: block; /* Ensure it takes up the line for text-overflow to work */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
+.tree-view-container li:hover { background-color: #f0f4f8; }
 
-/* Styles pour la vue "Plans de Vie" */
-.highlight-plan-element {
-  border-width: 2px !important; /* Plus visible */
-  /* exemple: border-color: #ff9800 !important; /* Orange pour la mise en évidence */
-  /* box-shadow: 0 0 8px #ff9800 !important; */
-  opacity: 1 !important;
-  transform: scale(1.02); /* Léger agrandissement */
-  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
-}
-.element-node.Action.highlight-plan-element {
-    border-color: #e65100 !important; /* Utilise une couleur en lien avec le type */
-    box-shadow: 0 0 6px #e65100aa !important;
-}
-.element-node.Encapacitation.highlight-plan-element {
-    border-color: #d81b60 !important; /* Couleur distincte pour Encapacitation */
-    box-shadow: 0 0 6px #d81b60aa !important;
-}
-
-
-.dim-plan-element {
-  opacity: 0.5 !important;
-  transition: opacity 0.2s ease-out;
-}
-
-.dim-parent-in-plan-view { /* Pour Période et Événement */
-  opacity: 0.65;
-  /* background-color: #f5f5f5 !important; /* Optionnel: les rendre plus neutres */
-  /* border-color: #e0e0e0 !important; */
-}
-
-/* Style pour le toggle de mode de vue */
+/* View Mode Toggle */
 .view-mode-toggle {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-left: auto; /* Pousse le toggle à droite */
+  margin-left: auto; /* Pushes toggle to the right in flex container */
 }
-.view-mode-toggle span {
-  font-size: 0.9em;
-  color: #546e7a;
-}
-.view-mode-toggle button {
-  padding: 6px 10px;
-  font-size: 0.85em;
-}
+.view-mode-toggle span { font-size: 0.9em; color: #546e7a; }
+.view-mode-toggle button { padding: 6px 10px; font-size: 0.85em; }
 .view-mode-toggle button:disabled {
-  background-color: #b0bec5; /* Plus foncé pour l'état actif/désactivé */
+  background-color: #b0bec5;
   color: white;
   border-color: #78909c;
-}
-
-/* Couleur spécifique pour Encapacitation */
-.element-node.Encapacitation { background: #fce4ec; border: 1px solid #f06292; } /* Rose pâle */
-.element-node.Encapacitation .custom-node-label { color: #d81b60; } /* Rose foncé */
-
-/* Assurez-vous que les simplified nodes héritent aussi des modificateurs de plans de vie */
-.simplified-node.highlight-plan-element {
-  border-width: 2px !important;
-  transform: scale(1.05);
-}
-.simplified-node.dim-plan-element {
-  opacity: 0.4 !important;
 }
