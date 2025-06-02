@@ -1,0 +1,137 @@
+# k8s-trajectory-app.yaml
+
+# --- Service ---
+# Modifié pour être de type ClusterIP, car l'Ingress s'en chargera
+apiVersion: v1
+kind: Service
+metadata:
+  name: trajectory-service
+  labels:
+    app: trajectory-app
+spec:
+  type: ClusterIP # Changé de LoadBalancer à ClusterIP
+  selector:
+    app: trajectory-app
+  ports:
+    - name: http-frontend # Nom explicite pour le port du frontend
+      protocol: TCP
+      port: 80 # Le service écoute sur le port 80
+      targetPort: 80 # Il cible le port 80 du conteneur frontend (Nginx)
+    # Note: Le port du backend (5001) n'a pas besoin d'être exposé ici
+    # car la communication frontend -> backend se fait via localhost DANS le pod.
+
+---
+# --- Backend Service ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trajectory-backend-service # Nouveau nom pour le service backend
+  labels:
+    app: trajectory-app # Ou un label plus spécifique si vous préférez
+spec:
+  type: ClusterIP # Interne au cluster, l'Ingress s'en chargera
+  selector:
+    app: trajectory-app # Doit correspondre aux labels de votre pod de déploiement
+  ports:
+    - name: backend-http
+      protocol: TCP
+      port: 5001 # Le port sur lequel ce service écoute
+      targetPort: 5001 # Le port sur lequel le conteneur backend écoute
+
+---
+# --- Ingress ---
+# Nouvelle ressource pour exposer l'application via un nom d'hôte et gérer le TLS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: trajectory-ingress
+  labels:
+    app: trajectory-app
+  annotations:
+    # Remplacez par la classe de votre Ingress Controller si différente
+    # Pour les versions plus récentes de Kubernetes/Nginx Ingress, préférez:
+    # kubernetes.io/ingress.class: "nginx"
+    # OU pour les versions encore plus récentes, spécifiez `ingressClassName` dans spec
+    nginx.ingress.kubernetes.io/ingress.class: "nginx" # Ou la valeur de votre classe d'ingress
+    cert-manager.io/issuer: "dns-cloudflare" # Assurez-vous que cet Issuer existe et est configuré
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m" # Correspond à la limite de votre backend
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3000"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3000"
+    # Optionnel: Forcer la redirection HTTPS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx # Pour les versions Kubernetes >= 1.18 et Nginx Ingress >= 0.25.0
+                          # Si vous utilisez une version plus ancienne, supprimez cette ligne
+                          # et assurez-vous que l'annotation kubernetes.io/ingress.class est correcte.
+  tls:
+    - hosts:
+        - trajectorizer.raphcvr.me
+      secretName: trajectorizer-raphcvr-me-tls # cert-manager créera ce secret avec le certificat
+  rules:
+    - host: trajectorizer.raphcvr.me
+      http:
+        paths:
+          - path: /api/trajectories # Chemin pour les appels API
+            pathType: Prefix
+            backend:
+              service:
+                name: trajectory-backend-service # Cible le nouveau service backend
+                port:
+                  number: 5001 # Port du service backend
+          - path: / # Chemin pour le frontend (doit être après les chemins plus spécifiques)
+            pathType: Prefix
+            backend:
+              service:
+                name: trajectory-service # Cible le service frontend existant
+                port:
+                  number: 80 # Port du service frontend
+
+---
+# --- Deployment ---
+# Le déploiement reste identique, car la structure du pod (frontend + backend)
+# et la communication interne via localhost ne changent pas.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trajectory-deployment
+  labels:
+    app: trajectory-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trajectory-app
+  template:
+    metadata:
+      labels:
+        app: trajectory-app
+    spec:
+      containers:
+        - name: trajectory-frontend
+          image: registry.digitalocean.com/team-container/trajectory-frontend:latest2 # Remplacez par votre image
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80 # Port Nginx dans le conteneur
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+
+        - name: trajectory-backend
+          image: registry.digitalocean.com/team-container/trajectory-backend:latest # Remplacez par votre image
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5001 # Port Node.js dans le conteneur
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+      # Optionnel: Si vous utilisez un secret pour tirer des images de DOCR
+      # imagePullSecrets:
+      # - name: digitalocean-registry-secret

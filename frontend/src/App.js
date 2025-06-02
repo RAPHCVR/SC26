@@ -29,7 +29,7 @@ const nodeTypes = {
   element: ElementNode,
 };
 
-const API_URL = 'http://localhost:5001/api/trajectories';
+const API_URL = '/api/trajectories';
 
 const SIMPLIFIED_VIEW_ZOOM_THRESHOLD = 0.3;
 const BASE_ARROW_SIZE = 20;
