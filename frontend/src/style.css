@@ -407,3 +407,75 @@ body {
   color: white;
   border-color: #78909c;
 }
+
+.filter-controls-bar {
+  display: flex;
+  padding: 8px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ccc;
+  gap: 8px;
+  flex-wrap: wrap; /* Allow wrapping for smaller screens */
+}
+
+.filter-controls-bar input[type="text"],
+.filter-controls-bar input[type="date"] {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.filter-controls-bar input[type="text"] {
+  flex-grow: 1; /* Allow text inputs to take more space */
+  min-width: 120px; /* Minimum width before wrapping */
+}
+
+
+.filter-controls-bar button {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  background-color: #e7e7e7;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.filter-controls-bar button:hover {
+  background-color: #ddd;
+}
+
+.dimmed-node {
+  opacity: 0.3 !important; /* Use !important to override other opacity settings if necessary */
+  /* filter: grayscale(80%); */ /* Optional: make it grayscale */
+}
+
+.dimmed-node .react-flow__handle {
+  /* visibility: hidden; */ /* Hiding handles on dimmed nodes might be too restrictive */
+   /* pointer-events: none; */ /* Alternative: make handles non-interactive */
+}
+
+.react-flow__edge.dimmed-edge path {
+  stroke-opacity: 0.2 !important;
+}
+.react-flow__edge.dimmed-edge .react-flow__edge-text {
+  opacity: 0.2 !important;
+}
+.react-flow__edge.dimmed-edge .react-flow__arrowhead path {
+ fill-opacity: 0.2 !important;
+ stroke-opacity: 0.2 !important;
+}
+
+/* Ensure dimmed styles apply correctly in simplified view */
+.simplified-node.dimmed-node,
+.simplified-element-base.dimmed-node {
+  opacity: 0.25 !important; /* Slightly more dimmed for small elements */
+  box-shadow: none !important; /* Remove shadow if any for clarity */
+}
+
+.main-controls-bar { /* Existing style, just to show filter bar is separate */
+  display: flex;
+  padding: 10px;
+  background-color: #e9ecef;
+  border-bottom: 1px solid #ced4da;
+  gap: 10px;
+  align-items: center;
+}

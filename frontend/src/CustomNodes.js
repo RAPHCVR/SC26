@@ -23,7 +23,7 @@ const useNodeChildBounds = (nodeId) => {
 const PeriodNodeComponent = ({ id, data, selected }) => {
   const currentZoom = useStore((store) => store.transform[2]);
   const { viewMode, alwaysMinimalist } = useViewMode();
-  const zoomThreshold = 0.3; // SIMPLIFIED_VIEW_ZOOM_THRESHOLD
+  const zoomThreshold = 0.3;
   const childBounds = useNodeChildBounds(id);
   const [size, setSize] = useState({ width: 350, height: 250 });
 
@@ -40,15 +40,16 @@ const PeriodNodeComponent = ({ id, data, selected }) => {
     });
   }, [childBounds?.width, childBounds?.height]);
 
-  let containerClasses = `custom-node period-node ${selected ? 'selected' : ''}`;
-  if (viewMode === 'lifePlans' && !alwaysMinimalist) {
+  let containerClasses = `custom-node period-node ${selected ? 'selected' : ''} ${data.isDimmed ? 'dimmed-node' : ''}`;
+  if (viewMode === 'lifePlans' && !alwaysMinimalist && !data.isDimmed) { // Dim if not highlighted by life plan mode AND not already dimmed by filter
     containerClasses += ' dim-parent-in-plan-view';
   }
+
 
   if (alwaysMinimalist || currentZoom < zoomThreshold) {
     return (
       <div
-        className={`${containerClasses} simplified-node`} // simplified-node est utilisé par Period et Event
+        className={`${containerClasses} simplified-node`}
         style={{ width: '100px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
       >
         <span className="custom-node-label" style={{ fontSize: '10px', borderBottom: 'none', paddingBottom: '0', whiteSpace: 'normal' }}>{data.label}</span>
@@ -57,7 +58,7 @@ const PeriodNodeComponent = ({ id, data, selected }) => {
   } else {
     return (
       <div className={containerClasses} style={{ width: size.width, height: size.height }}>
-        <NodeResizer minWidth={200} minHeight={150} isVisible={selected} />
+        <NodeResizer minWidth={200} minHeight={150} isVisible={selected && !data.isDimmed} />
         <span className="custom-node-label">Période</span>
         <div className="element-node-text">{data.label}</div>
       </div>
@@ -68,7 +69,7 @@ const PeriodNodeComponent = ({ id, data, selected }) => {
 const EventNodeComponent = ({ id, data, selected }) => {
   const currentZoom = useStore((store) => store.transform[2]);
   const { viewMode, alwaysMinimalist } = useViewMode();
-  const zoomThreshold = 0.3; // SIMPLIFIED_VIEW_ZOOM_THRESHOLD
+  const zoomThreshold = 0.3;
   const childBounds = useNodeChildBounds(id);
   const [size, setSize] = useState({ width: 300, height: 200 });
 
@@ -85,15 +86,15 @@ const EventNodeComponent = ({ id, data, selected }) => {
     });
   }, [childBounds?.width, childBounds?.height]);
 
-  let containerClasses = `custom-node event-node ${selected ? 'selected' : ''}`;
-  if (viewMode === 'lifePlans' && !alwaysMinimalist) {
+  let containerClasses = `custom-node event-node ${selected ? 'selected' : ''} ${data.isDimmed ? 'dimmed-node' : ''}`;
+  if (viewMode === 'lifePlans' && !alwaysMinimalist && !data.isDimmed) {
     containerClasses += ' dim-parent-in-plan-view';
   }
 
   if (alwaysMinimalist || currentZoom < zoomThreshold) {
     return (
       <div
-        className={`${containerClasses} simplified-node`} // simplified-node est utilisé par Period et Event
+        className={`${containerClasses} simplified-node`}
         style={{ width: '80px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
       >
         <span className="custom-node-label" style={{ fontSize: '9px', borderBottom: 'none', paddingBottom: '0', whiteSpace: 'normal' }}>{data.label}</span>
@@ -102,7 +103,7 @@ const EventNodeComponent = ({ id, data, selected }) => {
   } else {
     return (
       <div className={containerClasses} style={{ width: size.width, height: size.height }}>
-        <NodeResizer minWidth={150} minHeight={100} isVisible={selected} />
+        <NodeResizer minWidth={150} minHeight={100} isVisible={selected && !data.isDimmed} />
         <span className="custom-node-label">Événement</span>
         <div className="element-node-text">{data.label}</div>
       </div>
@@ -113,13 +114,12 @@ const EventNodeComponent = ({ id, data, selected }) => {
 const ElementNodeComponent = ({ id, data, selected }) => {
   const currentZoom = useStore((store) => store.transform[2]);
   const { viewMode, alwaysMinimalist } = useViewMode();
-  const zoomThreshold = 0.3; // SIMPLIFIED_VIEW_ZOOM_THRESHOLD
+  const zoomThreshold = 0.3;
   const elementType = data.elementType || 'Élément';
 
-  // Base classes for normal view, also used for simplified view for color/highlighting
-  let elementClasses = `custom-node element-node ${elementType.replace(/\s+/g, '-')} ${selected ? 'selected' : ''}`;
+  let elementClasses = `custom-node element-node ${elementType.replace(/\s+/g, '-')} ${selected ? 'selected' : ''} ${data.isDimmed ? 'dimmed-node' : ''}`;
 
-  if (viewMode === 'lifePlans') {
+  if (viewMode === 'lifePlans' && !data.isDimmed) { // Apply life plan styling only if not dimmed by filter
     if (elementType === 'Action' || elementType === 'Encapacitation') {
       elementClasses += ' highlight-plan-element';
     } else {
@@ -127,58 +127,40 @@ const ElementNodeComponent = ({ id, data, selected }) => {
     }
   }
 
+
   if (alwaysMinimalist || currentZoom < zoomThreshold) {
     let shapeSpecificClass = '';
-    let shapeContent = null; // For Unicode symbols like stars
+    let shapeContent = null;
 
     switch (elementType) {
-      case 'Fait':
-        shapeSpecificClass = 'shape-square';
-        break;
-      case 'Contexte':
-        shapeSpecificClass = 'shape-diamond';
-        break;
-      case 'Vécu':
-        shapeSpecificClass = 'shape-circle';
-        break;
-      case 'Action':
-        shapeSpecificClass = 'shape-triangle';
-        break;
-      case 'Encapacitation':
-        shapeSpecificClass = 'shape-star';
-        shapeContent = '★'; // Unicode star symbol
-        break;
-      default:
-        shapeSpecificClass = 'shape-default-circle'; // Fallback shape
-        break;
+      case 'Fait': shapeSpecificClass = 'shape-square'; break;
+      case 'Contexte': shapeSpecificClass = 'shape-diamond'; break;
+      case 'Vécu': shapeSpecificClass = 'shape-circle'; break;
+      case 'Action': shapeSpecificClass = 'shape-triangle'; break;
+      case 'Encapacitation': shapeSpecificClass = 'shape-star'; shapeContent = '★'; break;
+      default: shapeSpecificClass = 'shape-default-circle'; break;
     }
-
-    // Combine base styling for simplified elements, element-type specific classes (for color/effects), and shape class
     const finalSimplifiedClasses = `simplified-element-base ${elementClasses} ${shapeSpecificClass}`;
 
     return (
       <div
         className={finalSimplifiedClasses}
-        style={{
-          width: '30px', // Fixed size for all simplified elements
-          height: '30px',
-        }}
+        style={{ width: '30px', height: '30px' }}
         title={data.label}
       >
         {shapeContent && <span className="shape-symbol">{shapeContent}</span>}
-        <Handle type="target" position={Position.Left} id={`target-element-${data.id}-simple`} style={{width:'5px', height:'5px', left:'-3px', top:'50%', transform:'translateY(-50%)', zIndex: 5}} />
-        <Handle type="source" position={Position.Right} id={`source-element-${data.id}-simple`} style={{width:'5px', height:'5px', right:'-3px', top:'50%', transform:'translateY(-50%)', zIndex: 5}}/>
+        <Handle type="target" position={Position.Left} id={`target-element-${data.id}-simple`} style={{width:'5px', height:'5px', left:'-3px', top:'50%', transform:'translateY(-50%)', zIndex: 5, visibility: data.isDimmed ? 'hidden' : 'visible' }} />
+        <Handle type="source" position={Position.Right} id={`source-element-${data.id}-simple`} style={{width:'5px', height:'5px', right:'-3px', top:'50%', transform:'translateY(-50%)', zIndex: 5, visibility: data.isDimmed ? 'hidden' : 'visible' }}/>
       </div>
     );
   } else {
-    // Normal view rendering
     return (
       <div className={elementClasses}>
-        <NodeResizer minWidth={180} minHeight={60} isVisible={selected} />
-        <Handle type="target" position={Position.Left} id={`target-element-${data.id}`} />
+        <NodeResizer minWidth={180} minHeight={60} isVisible={selected && !data.isDimmed} />
+        <Handle type="target" position={Position.Left} id={`target-element-${data.id}`} style={{ visibility: data.isDimmed ? 'hidden' : 'visible' }}/>
         <span className="custom-node-label">{elementType}</span>
         <div className="element-node-text">{data.label}</div>
-        <Handle type="source" position={Position.Right} id={`source-element-${data.id}`} />
+        <Handle type="source" position={Position.Right} id={`source-element-${data.id}`} style={{ visibility: data.isDimmed ? 'hidden' : 'visible' }}/>
       </div>
     );
   }

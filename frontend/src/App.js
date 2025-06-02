@@ -37,15 +37,25 @@ const MIN_ARROW_SCALE = 0.4;
 const MAX_ARROW_SCALE = 1.5;
 const SIMPLIFIED_ARROW_SIZE = 7;
 
-function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'intérieur
+function TrajectoryAppContent() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { project, getNodes, getNode, setViewport, fitView, fitBounds } = useReactFlow(); // setCenter enlevé
+  const { project, getNodes, getNode, setViewport, fitView, fitBounds } = useReactFlow();
 
   const [trajectories, setTrajectories] = useState([]);
   const [currentTrajectoryId, setCurrentTrajectoryId] = useState(null);
   const [currentTrajectoryName, setCurrentTrajectoryName] = useState('');
   const [newTrajectoryName, setNewTrajectoryName] = useState('');
+
+  // Filter states
+  const [includeTagsInput, setIncludeTagsInput] = useState('');
+  const [excludeTagsInput, setExcludeTagsInput] = useState('');
+  const [locationTagsInput, setLocationTagsInput] = useState('');
+  const [personTagsInput, setPersonTagsInput] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
+  const [activeFilters, setActiveFilters] = useState({});
+
 
   const reactFlowWrapper = useRef(null);
   const currentZoom = useStore((store) => store.transform[2]);
@@ -98,6 +108,129 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
     setEdges(prevEdges => adjustMarkersForZoom(prevEdges, currentZoom));
   }, [currentZoom, setEdges, adjustMarkersForZoom, alwaysMinimalist]);
 
+  // Apply filters and update node/edge appearance
+  useEffect(() => {
+    if (Object.keys(activeFilters).length === 0 && nodes.every(n => !n.data.isDimmed)) {
+        // If no filters and no nodes are dimmed, no need to process
+        // also ensure edges are not dimmed
+        if (edges.every(e => !e.className?.includes('dimmed-edge'))) return;
+    }
+  
+    const {
+      includeTags = [],
+      excludeTags = [],
+      locationTags = [],
+      personTags = [],
+      startDate,
+      endDate,
+    } = activeFilters;
+
+    const hasActiveFilters = 
+        includeTags.length > 0 ||
+        excludeTags.length > 0 ||
+        locationTags.length > 0 ||
+        personTags.length > 0 ||
+        startDate ||
+        endDate;
+
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => {
+        if (!hasActiveFilters) {
+          return { ...node, data: { ...node.data, isDimmed: false } };
+        }
+
+        let match = true;
+        const nodeData = node.data || {};
+        const nodeTags = (nodeData.tags || []).map(t => t.toLowerCase());
+        const nodeLocationTags = (nodeData.locationTags || []).map(t => t.toLowerCase());
+        const nodePersonTags = (nodeData.personTags || []).map(t => t.toLowerCase());
+
+        if (includeTags.length > 0) {
+          match = match && includeTags.every(tag => nodeTags.includes(tag) || nodeLocationTags.includes(tag) || nodePersonTags.includes(tag));
+        }
+        if (excludeTags.length > 0) {
+          match = match && !excludeTags.some(tag => nodeTags.includes(tag) || nodeLocationTags.includes(tag) || nodePersonTags.includes(tag));
+        }
+        if (locationTags.length > 0) {
+          match = match && locationTags.every(tag => nodeLocationTags.includes(tag));
+        }
+        if (personTags.length > 0) {
+          match = match && personTags.every(tag => nodePersonTags.includes(tag));
+        }
+
+        let matchesDates = true; // Assume true if no date filters
+        if (startDate || endDate) {
+          const nodeStartDate = nodeData.startDate ? new Date(nodeData.startDate) : null;
+          const nodeEndDate = nodeData.endDate ? new Date(nodeData.endDate) : null;
+          const nodeSingleDate = nodeData.date ? new Date(nodeData.date) : null;
+          const filterStartDateObj = startDate ? new Date(startDate) : null;
+          const filterEndDateObj = endDate ? new Date(endDate) : null;
+          if (!nodeStartDate && !nodeEndDate && !nodeSingleDate) {
+            matchesDates = false; // Node has no date info, so it cannot match an active date filter
+          } else if (nodeStartDate && nodeEndDate) { // Node is a period
+            matchesDates = 
+                (!filterStartDateObj || (nodeEndDate.getTime() >= filterStartDateObj.getTime())) && 
+                (!filterEndDateObj || (nodeStartDate.getTime() <= filterEndDateObj.getTime()));
+          } else if (nodeSingleDate) { // Node is a point in time
+            matchesDates = 
+                (!filterStartDateObj || (nodeSingleDate.getTime() >= filterStartDateObj.getTime())) && 
+                (!filterEndDateObj || (nodeSingleDate.getTime() <= filterEndDateObj.getTime()));
+          } else {
+            matchesDates = false;
+          }
+          match = match && matchesDates;
+        }
+        
+        return { ...node, data: { ...node.data, isDimmed: !match } };
+      })
+    );
+
+    setEdges(prevEdges => 
+        prevEdges.map(edge => {
+            // An edge is dimmed if either its source or target node is dimmed (after the node update)
+            // Or if there are active filters and the edge itself doesn't have specific filterable data (which is usually the case)
+            // For now, simple logic: if no active filters, edge is not dimmed. Otherwise, it *could* be dimmed based on its nodes.
+            if (!hasActiveFilters) {
+                return { ...edge, className: edge.className?.replace('dimmed-edge', '').trim() };
+            }
+            // Check connected nodes after nodes state has been updated. This requires a more complex effect dependency or check.
+            // For now, we'll rely on a subsequent re-render or a slightly delayed check.
+            // A simple heuristic: if ANY filter is active, edges CAN be dimmed. We'll rely on CSS for nodes.
+            // This part needs refinement to specifically dim edges connected to dimmed nodes.
+            // A placeholder for more complex edge dimming:
+            // const sourceNode = getNodes().find(n => n.id === edge.source);
+            // const targetNode = getNodes().find(n => n.id === edge.target);
+            // if (sourceNode?.data.isDimmed || targetNode?.data.isDimmed) {
+            //    return { ...edge, className: `${edge.className || ''} dimmed-edge`.trim() };
+            // }
+            return { ...edge, className: edge.className?.replace('dimmed-edge', '').trim() }; // Default to not dimmed, CustomNode will handle its look
+        })
+    );
+
+  }, [activeFilters, setNodes, setEdges, getNodes]); // Added getNodes here for potential edge dimming logic
+
+  const handleApplyFilters = () => {
+    setActiveFilters({
+      includeTags: includeTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+      excludeTags: excludeTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+      locationTags: locationTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+      personTags: personTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+      startDate: startDateFilter,
+      endDate: endDateFilter,
+    });
+  };
+
+  const handleClearFilters = () => {
+    setIncludeTagsInput('');
+    setExcludeTagsInput('');
+    setLocationTagsInput('');
+    setPersonTagsInput('');
+    setStartDateFilter('');
+    setEndDateFilter('');
+    setActiveFilters({});
+  };
+
+
   const onConnect = useCallback((params) => {
     const linkType = prompt("Type de lien (produit, engendre, influe sur, mène à, motive, contextualise, permet, facilite, débouche sur, se concrétise par, précède, aboutit à, est suivi de, résulte en, provoque, dans un contexte de, vise à, démontre):", "est lié à");
     if (linkType) {
@@ -136,6 +269,25 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
     if (!label) return;
 
     const id = uuidv4();
+    let newNodeData = { label }; // Base data
+    // Prompt for additional data for new nodes
+    if (type !== 'Période' && type !== 'Événement') { // i.e. for Fait, Contexte, etc.
+        const tagsStr = prompt("Tags (séparés par virgule):", "");
+        if (tagsStr) newNodeData.tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+        const locTagsStr = prompt("Tags Lieu (séparés par virgule):", "");
+        if (locTagsStr) newNodeData.locationTags = locTagsStr.split(',').map(t => t.trim()).filter(Boolean);
+        const personTagsStr = prompt("Tags Personne (séparés par virgule):", "");
+        if (personTagsStr) newNodeData.personTags = personTagsStr.split(',').map(t => t.trim()).filter(Boolean);
+        const nodeDate = prompt("Date (YYYY-MM-DD ou laisser vide si période):", "");
+        if (nodeDate) newNodeData.date = nodeDate;
+    } else if (type === 'Période' || type === 'Événement') {
+        const startDate = prompt("Date de début (YYYY-MM-DD, optionnel):", "");
+        if (startDate) newNodeData.startDate = startDate;
+        const endDate = prompt("Date de fin (YYYY-MM-DD, optionnel):", "");
+        if (endDate) newNodeData.endDate = endDate;
+    }
+
+
     let newNode;
     let position;
     const parentNode = parentId ? getNode(parentId) : null;
@@ -166,26 +318,47 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
 
     switch (type) {
       case 'Période':
-        newNode = { id, type: 'period', position, data: { label } };
+        newNode = { id, type: 'period', position, data: newNodeData };
         break;
       case 'Événement':
         if (!parentId) { alert("Sélectionnez une Période."); return; }
-        newNode = { id, type: 'event', position, parentNode: parentId, extent: 'parent', data: { label } };
+        newNode = { id, type: 'event', position, parentNode: parentId, extent: 'parent', data: newNodeData };
         break;
       default: // Fait, Contexte, Vécu, Action, Encapacitation
         if (!parentId) { alert("Sélectionnez un Événement."); return; }
-        newNode = { id, type: 'element', position, parentNode: parentId, extent: 'parent', data: { label, elementType: type, id } };
+        newNode = { id, type: 'element', position, parentNode: parentId, extent: 'parent', data: { ...newNodeData, elementType: type, id } };
         break;
     }
     setNodes((nds) => nds.concat(newNode));
-  }, [project, getNode, getNodes, setNodes, setViewport, getRectOfNodes, fitBounds]); // Ajout de getRectOfNodes et fitBounds
+  }, [project, getNode, getNodes, setNodes, setViewport, getRectOfNodes, fitBounds]);
 
   const onNodeDoubleClick = useCallback((event, node) => {
     const newLabel = prompt("Modifier le nom/texte:", node.data.label);
     if (newLabel !== null && newLabel !== node.data.label) {
+      const updatedNodeData = { ...node.data, label: newLabel };
+      // Allow editing other fields too
+      const tagsStr = prompt("Modifier Tags (séparés par virgule):", (node.data.tags || []).join(', '));
+      if (tagsStr !== null) updatedNodeData.tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+      
+      const locTagsStr = prompt("Modifier Tags Lieu:", (node.data.locationTags || []).join(', '));
+      if (locTagsStr !== null) updatedNodeData.locationTags = locTagsStr.split(',').map(t => t.trim()).filter(Boolean);
+
+      const personTagsStr = prompt("Modifier Tags Personne:", (node.data.personTags || []).join(', '));
+      if (personTagsStr !== null) updatedNodeData.personTags = personTagsStr.split(',').map(t => t.trim()).filter(Boolean);
+
+      if (node.type === 'Période' || node.type === 'Événement') {
+        const startDate = prompt("Modifier Date de début (YYYY-MM-DD):", node.data.startDate || "");
+        if (startDate !== null) updatedNodeData.startDate = startDate;
+        const endDate = prompt("Modifier Date de fin (YYYY-MM-DD):", node.data.endDate || "");
+        if (endDate !== null) updatedNodeData.endDate = endDate;
+      } else if (node.type === 'element') {
+        const nodeDate = prompt("Modifier Date (YYYY-MM-DD):", node.data.date || "");
+        if (nodeDate !== null) updatedNodeData.date = nodeDate;
+      }
+
       setNodes((nds) =>
         nds.map((n) =>
-          n.id === node.id ? { ...n, data: { ...n.data, label: newLabel } } : n
+          n.id === node.id ? { ...n, data: updatedNodeData } : n
         )
       );
     }
@@ -211,6 +384,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
       setNodes([]);
       setEdges(adjustMarkersForZoom([], currentZoom));
       setNewTrajectoryName('');
+      handleClearFilters(); // Clear filters on new trajectory
     } catch (error) { console.error("Erreur création:", error); alert("Échec création."); }
   };
 
@@ -222,6 +396,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
       setEdges(adjustMarkersForZoom(trajectoryData.edges || [], currentZoom));
       setCurrentTrajectoryId(trajectoryIdToLoad);
       setCurrentTrajectoryName(trajectoryData.subjectName);
+      handleClearFilters(); // Clear filters on load
       setTimeout(() => fitView({ padding: 0.1, duration: 300 }), 100);
     } catch (error) { console.error("Erreur chargement:", error); alert("Échec chargement."); }
   };
@@ -229,13 +404,19 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
   const handleSaveTrajectory = async () => {
     if (!currentTrajectoryId) { alert("Aucune trajectoire chargée."); return; }
     try {
-      const cleanNodes = nodes.map(({ selected, dragging, positionAbsolute, ...rest }) => ({...rest, data: {...rest.data}}));
+      // Remove transient properties like isDimmed before saving
+      const cleanNodes = nodes.map(({ selected, dragging, positionAbsolute, data, ...rest }) => {
+        // eslint-disable-next-line no-unused-vars
+        const { isDimmed, ...restData } = data; 
+        return {...rest, data: restData};
+      });
+
       const edgesToSave = edges.map(edge => {
         // eslint-disable-next-line no-unused-vars
-        const { selected, ...restOfEdge } = edge;
+        const { selected, className, ...restOfEdge } = edge; // Remove className used for dimming
         return {
           ...restOfEdge,
-          markerEnd: {
+          markerEnd: { // Save base marker size
             ...(edge.markerEnd || { type: 'arrowclosed' }),
             width: BASE_ARROW_SIZE,
             height: BASE_ARROW_SIZE,
@@ -303,8 +484,9 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
     setCurrentTrajectoryId(precreatedTrajectoryId);
     setCurrentTrajectoryName(precreatedTrajectoryName);
     const adjustedPrecreatedEdges = adjustMarkersForZoom(precreatedEdgesData, currentZoom);
-    setNodes(precreatedNodesData);
+    setNodes(precreatedNodesData); // Data now includes tags, dates etc.
     setEdges(adjustedPrecreatedEdges);
+    handleClearFilters(); // Clear filters for precreated
     setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 100);
 
     const edgesToSaveForPrecreated = precreatedEdgesData.map(edge => {
@@ -355,6 +537,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
   return (
     <div className="app-container">
       <div className="main-controls-bar">
+        {/* Trajectory Management */}
         <input
           type="text"
           placeholder="Nom du Sujet (Nouvelle Trajectoire)"
@@ -366,9 +549,9 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
           Sauvegarder
         </button>
         <button onClick={handleAutoLayout}>Auto-Layout</button>
-                <button 
+        <button 
           onClick={() => setAlwaysMinimalist(prev => !prev)}
-          style={{ backgroundColor: alwaysMinimalist ? '#a5d6a7' : '#eceff1' }} // Style optionnel pour indiquer l'état
+          style={{ backgroundColor: alwaysMinimalist ? '#a5d6a7' : '#eceff1' }}
         >
           {alwaysMinimalist ? "Désactiver" : "Activer"} Toujours Minimaliste
         </button>
@@ -378,6 +561,19 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
           <button onClick={() => setViewMode('lifePlans')} disabled={viewMode === 'lifePlans'}>Plans de Vie</button>
         </div>
       </div>
+
+      {/* Filter Controls Bar */}
+      <div className="filter-controls-bar">
+        <input type="text" placeholder="Inclure tags (ex: tag1,tag2)" value={includeTagsInput} onChange={e => setIncludeTagsInput(e.target.value)} />
+        <input type="text" placeholder="Exclure tags (ex: tagA,tagB)" value={excludeTagsInput} onChange={e => setExcludeTagsInput(e.target.value)} />
+        <input type="text" placeholder="Tags Lieu (ex: Paris,Syrie)" value={locationTagsInput} onChange={e => setLocationTagsInput(e.target.value)} />
+        <input type="text" placeholder="Tags Personne (ex: AnissaM)" value={personTagsInput} onChange={e => setPersonTagsInput(e.target.value)} />
+        <input type="date" title="Date de début filtre" value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
+        <input type="date" title="Date de fin filtre" value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
+        <button onClick={handleApplyFilters}>Appliquer Filtres</button>
+        <button onClick={handleClearFilters}>Effacer Filtres</button>
+      </div>
+
       <div className="status-bar">
         {currentTrajectoryId ? (
           <span>Trajectoire : <strong>{currentTrajectoryName}</strong> | Vue : <strong>{viewMode === 'temporal' ? 'Temporelle' : 'Plans de Vie'}</strong></span>
@@ -414,7 +610,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
               disabled={!getSelectedNode() || getSelectedNode()?.type !== 'period'}>
               Ajouter Événement
             </button>
-            {['Fait', 'Contexte', 'Vécu', 'Action', 'Encapacitation'].map(type => ( // Ajout Encapacitation
+            {['Fait', 'Contexte', 'Vécu', 'Action', 'Encapacitation'].map(type => (
               <button style={{marginTop:'5px', width:'100%'}} key={type} 
                 onClick={() => {
                   const selected = getSelectedNode();
@@ -466,7 +662,7 @@ function TrajectoryAppContent() { // Renommé pour utiliser useViewMode à l'int
   );
 }
 
-export default function AppWrapper() { // Enveloppe avec le Provider
+export default function AppWrapper() {
   return (
     <ReactFlowProvider>
       <ViewModeProvider>
