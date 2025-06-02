@@ -470,12 +470,3 @@ body {
   opacity: 0.25 !important; /* Slightly more dimmed for small elements */
   box-shadow: none !important; /* Remove shadow if any for clarity */
 }
-
-.main-controls-bar { /* Existing style, just to show filter bar is separate */
-  display: flex;
-  padding: 10px;
-  background-color: #e9ecef;
-  border-bottom: 1px solid #ced4da;
-  gap: 10px;
-  align-items: center;
-}
