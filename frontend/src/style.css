@@ -442,31 +442,3 @@ body {
 .filter-controls-bar button:hover {
   background-color: #ddd;
 }
-
-.dimmed-node {
-  opacity: 0.3 !important; /* Use !important to override other opacity settings if necessary */
-  /* filter: grayscale(80%); */ /* Optional: make it grayscale */
-}
-
-.dimmed-node .react-flow__handle {
-  /* visibility: hidden; */ /* Hiding handles on dimmed nodes might be too restrictive */
-   /* pointer-events: none; */ /* Alternative: make handles non-interactive */
-}
-
-.react-flow__edge.dimmed-edge path {
-  stroke-opacity: 0.2 !important;
-}
-.react-flow__edge.dimmed-edge .react-flow__edge-text {
-  opacity: 0.2 !important;
-}
-.react-flow__edge.dimmed-edge .react-flow__arrowhead path {
- fill-opacity: 0.2 !important;
- stroke-opacity: 0.2 !important;
-}
-
-/* Ensure dimmed styles apply correctly in simplified view */
-.simplified-node.dimmed-node,
-.simplified-element-base.dimmed-node {
-  opacity: 0.25 !important; /* Slightly more dimmed for small elements */
-  box-shadow: none !important; /* Remove shadow if any for clarity */
-}

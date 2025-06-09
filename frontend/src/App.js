@@ -52,6 +52,8 @@ function TrajectoryAppContent() {
   const [excludeTagsInput, setExcludeTagsInput] = useState('');
   const [locationTagsInput, setLocationTagsInput] = useState('');
   const [personTagsInput, setPersonTagsInput] = useState('');
+  const [excludeLocationTagsInput, setExcludeLocationTagsInput] = useState('');
+  const [excludePersonTagsInput, setExcludePersonTagsInput] = useState('');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
   const [activeFilters, setActiveFilters] = useState({});
@@ -110,33 +112,32 @@ function TrajectoryAppContent() {
 
   // Apply filters and update node/edge appearance
   useEffect(() => {
-    if (Object.keys(activeFilters).length === 0 && nodes.every(n => !n.data.isDimmed)) {
-        // If no filters and no nodes are dimmed, no need to process
-        // also ensure edges are not dimmed
-        if (edges.every(e => !e.className?.includes('dimmed-edge'))) return;
-    }
-  
     const {
       includeTags = [],
       excludeTags = [],
       locationTags = [],
       personTags = [],
+      excludeLocationTags = [],
+      excludePersonTags = [],
       startDate,
       endDate,
     } = activeFilters;
 
-    const hasActiveFilters = 
+    const hasActiveFilters =
         includeTags.length > 0 ||
         excludeTags.length > 0 ||
         locationTags.length > 0 ||
         personTags.length > 0 ||
+        excludeLocationTags.length > 0 ||
+        excludePersonTags.length > 0 ||
         startDate ||
         endDate;
 
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
         if (!hasActiveFilters) {
-          return { ...node, data: { ...node.data, isDimmed: false } };
+          // un-hide node if it was hidden
+          return { ...node, hidden: false };
         }
 
         let match = true;
@@ -157,6 +158,12 @@ function TrajectoryAppContent() {
         if (personTags.length > 0) {
           match = match && personTags.every(tag => nodePersonTags.includes(tag));
         }
+        if (excludeLocationTags.length > 0) {
+          match = match && !excludeLocationTags.some(tag => nodeLocationTags.includes(tag));
+        }
+        if (excludePersonTags.length > 0) {
+          match = match && !excludePersonTags.some(tag => nodePersonTags.includes(tag));
+        }
 
         let matchesDates = true; // Assume true if no date filters
         if (startDate || endDate) {
@@ -168,12 +175,12 @@ function TrajectoryAppContent() {
           if (!nodeStartDate && !nodeEndDate && !nodeSingleDate) {
             matchesDates = false; // Node has no date info, so it cannot match an active date filter
           } else if (nodeStartDate && nodeEndDate) { // Node is a period
-            matchesDates = 
-                (!filterStartDateObj || (nodeEndDate.getTime() >= filterStartDateObj.getTime())) && 
+            matchesDates =
+                (!filterStartDateObj || (nodeEndDate.getTime() >= filterStartDateObj.getTime())) &&
                 (!filterEndDateObj || (nodeStartDate.getTime() <= filterEndDateObj.getTime()));
           } else if (nodeSingleDate) { // Node is a point in time
-            matchesDates = 
-                (!filterStartDateObj || (nodeSingleDate.getTime() >= filterStartDateObj.getTime())) && 
+            matchesDates =
+                (!filterStartDateObj || (nodeSingleDate.getTime() >= filterStartDateObj.getTime())) &&
                 (!filterEndDateObj || (nodeSingleDate.getTime() <= filterEndDateObj.getTime()));
           } else {
             matchesDates = false;
@@ -181,33 +188,12 @@ function TrajectoryAppContent() {
           match = match && matchesDates;
         }
         
-        return { ...node, data: { ...node.data, isDimmed: !match } };
+        return { ...node, hidden: !match };
       })
     );
-
-    setEdges(prevEdges => 
-        prevEdges.map(edge => {
-            // An edge is dimmed if either its source or target node is dimmed (after the node update)
-            // Or if there are active filters and the edge itself doesn't have specific filterable data (which is usually the case)
-            // For now, simple logic: if no active filters, edge is not dimmed. Otherwise, it *could* be dimmed based on its nodes.
-            if (!hasActiveFilters) {
-                return { ...edge, className: edge.className?.replace('dimmed-edge', '').trim() };
-            }
-            // Check connected nodes after nodes state has been updated. This requires a more complex effect dependency or check.
-            // For now, we'll rely on a subsequent re-render or a slightly delayed check.
-            // A simple heuristic: if ANY filter is active, edges CAN be dimmed. We'll rely on CSS for nodes.
-            // This part needs refinement to specifically dim edges connected to dimmed nodes.
-            // A placeholder for more complex edge dimming:
-            // const sourceNode = getNodes().find(n => n.id === edge.source);
-            // const targetNode = getNodes().find(n => n.id === edge.target);
-            // if (sourceNode?.data.isDimmed || targetNode?.data.isDimmed) {
-            //    return { ...edge, className: `${edge.className || ''} dimmed-edge`.trim() };
-            // }
-            return { ...edge, className: edge.className?.replace('dimmed-edge', '').trim() }; // Default to not dimmed, CustomNode will handle its look
-        })
-    );
-
-  }, [activeFilters, setNodes, setEdges, getNodes]); // Added getNodes here for potential edge dimming logic
+    // Edges are automatically hidden by React Flow if their source/target is hidden.
+    // No need to manually manage edge visibility here.
+  }, [activeFilters, setNodes]);
 
   const handleApplyFilters = () => {
     setActiveFilters({
@@ -215,6 +201,8 @@ function TrajectoryAppContent() {
       excludeTags: excludeTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
       locationTags: locationTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
       personTags: personTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+      excludeLocationTags: excludeLocationTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
+      excludePersonTags: excludePersonTagsInput.split(',').map(t => t.trim().toLowerCase()).filter(Boolean),
       startDate: startDateFilter,
       endDate: endDateFilter,
     });
@@ -225,6 +213,8 @@ function TrajectoryAppContent() {
     setExcludeTagsInput('');
     setLocationTagsInput('');
     setPersonTagsInput('');
+    setExcludeLocationTagsInput('');
+    setExcludePersonTagsInput('');
     setStartDateFilter('');
     setEndDateFilter('');
     setActiveFilters({});
@@ -404,10 +394,10 @@ function TrajectoryAppContent() {
   const handleSaveTrajectory = async () => {
     if (!currentTrajectoryId) { alert("Aucune trajectoire chargée."); return; }
     try {
-      // Remove transient properties like isDimmed before saving
-      const cleanNodes = nodes.map(({ selected, dragging, positionAbsolute, data, ...rest }) => {
+      // Remove transient properties like hidden before saving
+      const cleanNodes = nodes.map(({ selected, dragging, positionAbsolute, hidden, data, ...rest }) => {
         // eslint-disable-next-line no-unused-vars
-        const { isDimmed, ...restData } = data; 
+        const { isDimmed, ...restData } = data || {}; // also clean isDimmed for backwards compatibility
         return {...rest, data: restData};
       });
 
@@ -568,6 +558,8 @@ function TrajectoryAppContent() {
         <input type="text" placeholder="Exclure tags (ex: tagA,tagB)" value={excludeTagsInput} onChange={e => setExcludeTagsInput(e.target.value)} />
         <input type="text" placeholder="Tags Lieu (ex: Paris,Syrie)" value={locationTagsInput} onChange={e => setLocationTagsInput(e.target.value)} />
         <input type="text" placeholder="Tags Personne (ex: AnissaM)" value={personTagsInput} onChange={e => setPersonTagsInput(e.target.value)} />
+        <input type="text" placeholder="Exclure Tags Lieu (ex: Paris)" value={excludeLocationTagsInput} onChange={e => setExcludeLocationTagsInput(e.target.value)} />
+        <input type="text" placeholder="Exclure Tags Personne (ex: Jean)" value={excludePersonTagsInput} onChange={e => setExcludePersonTagsInput(e.target.value)} />
         <input type="date" title="Date de début filtre" value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} />
         <input type="date" title="Date de fin filtre" value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} />
         <button onClick={handleApplyFilters}>Appliquer Filtres</button>
