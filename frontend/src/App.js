@@ -477,7 +477,7 @@ function TrajectoryAppContent() {
     setNodes(precreatedNodesData); // Data now includes tags, dates etc.
     setEdges(adjustedPrecreatedEdges);
     handleClearFilters(); // Clear filters for precreated
-    setTimeout(() => fitView({ padding: 0.1, duration: 500 }), 100);
+    setTimeout(() => fitView({ padding: 1.2, duration: 500 }), 100);
 
     const edgesToSaveForPrecreated = precreatedEdgesData.map(edge => {
         // eslint-disable-next-line no-unused-vars
@@ -636,7 +636,7 @@ function TrajectoryAppContent() {
             nodeTypes={nodeTypes}
             deleteKeyCode={['Backspace', 'Delete']}
             fitView
-            fitViewOptions={{ padding: 0.2 }}
+            fitViewOptions={{ padding: 1.2 }}
             nodesDraggable={true}
             nodesConnectable={true}
             elementsSelectable={true}
