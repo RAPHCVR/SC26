@@ -1,14 +1,14 @@
 // Provides a simple automatic layout for nodes within their parent containers.
 export function autoLayout(nodes) {
   // Default dimensions and spacing constants for layout calculation.
-  const widthDefault = { period: 350, event: 300, element: 180 };
-  const heightDefault = { period: 250, event: 200, element: 60 };
+  const widthDefault = { period: 280, event: 220, element: 160 };
+  const heightDefault = { period: 170, event: 160, element: 50 };
   
-  const eventSpacing = 70; // Horizontal spacing between event nodes within a period.
+  const eventSpacing = 40; // Horizontal spacing between event nodes within a period.
   const elementSpacing = 60; // Vertical spacing between element nodes within an event.
   
   // Vertical offsets to position children below the parent's label/header area.
-  const periodHeaderYOffset = 70; 
+  const periodHeaderYOffset = 45; 
   const eventHeaderYOffset = 50;
 
   // Horizontal offsets for children from the parent's left edge.
